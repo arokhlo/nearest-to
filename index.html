@@ -126,7 +126,7 @@
 
   .field-row{
     display:grid;
-    grid-template-columns: 1.1fr 1.4fr auto;
+    grid-template-columns: 1.1fr 1.4fr auto auto;
     gap:12px;
     align-items:end;
   }
@@ -186,6 +186,24 @@
   button.go:hover{ background:var(--os-green-light); }
   button.go:active{ transform: translateY(1px); }
   button.go:disabled{ background:#A8A091; cursor:wait; }
+
+  button.stop{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.4px;
+    background:transparent;
+    color:var(--postbox-red);
+    border:1.5px solid var(--postbox-red);
+    border-radius:4px;
+    padding:11px 18px;
+    cursor:pointer;
+    transition: background .15s ease, color .15s ease, transform .08s ease;
+    white-space:nowrap;
+  }
+  button.stop:hover{ background:var(--postbox-red); color:#fff; }
+  button.stop:active{ transform: translateY(1px); }
+  button.stop[hidden]{ display:none; }
 
   .quick-chips{
     display:flex;
@@ -386,6 +404,7 @@
         <input type="text" id="query" placeholder="e.g. Aldi, college, train station">
       </div>
       <button class="go" id="searchBtn">Find nearest</button>
+      <button class="stop" id="stopBtn" hidden>Stop</button>
     </div>
 
     <div class="quick-chips">
@@ -429,9 +448,15 @@
   const postcodeInput = document.getElementById('postcode');
   const queryInput = document.getElementById('query');
   const searchBtn = document.getElementById('searchBtn');
+  const stopBtn = document.getElementById('stopBtn');
   const statusEl = document.getElementById('status');
   const resultsArea = document.getElementById('resultsArea');
   const chips = document.querySelectorAll('.chip');
+
+  // Tracks the controller for whichever request is currently in flight,
+  // so the Stop button can cancel it immediately.
+  let activeController = null;
+  let searchCancelled = false;
 
   chips.forEach(chip=>{
     chip.addEventListener('click', ()=>{
@@ -443,6 +468,14 @@
   postcodeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
   queryInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
   searchBtn.addEventListener('click', doSearch);
+
+  stopBtn.addEventListener('click', ()=>{
+    searchCancelled = true;
+    if(activeController) activeController.abort();
+    setStatus('Search stopped.', 'error');
+    searchBtn.disabled = false;
+    stopBtn.hidden = true;
+  });
 
   function setStatus(msg, type){
     statusEl.textContent = msg || '';
@@ -493,12 +526,13 @@
     </svg>`;
   }
 
-  async function geocodePostcode(raw){
+  async function geocodePostcode(raw, signal){
     const pc = encodeURIComponent(raw.trim());
     let res;
     try{
-      res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+      res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal });
     } catch(networkErr){
+      if(networkErr.name === 'AbortError') throw networkErr;
       console.error('Postcode lookup network error:', networkErr);
       const e = new Error('POSTCODE_NETWORK');
       e.detail = networkErr.message;
@@ -520,15 +554,15 @@
     const q = queryRaw.trim().toLowerCase();
 
     const exactMap = {
-      'aldi': '["shop"="supermarket"]["name"~"Aldi",i]',
-      'lidl': '["shop"="supermarket"]["name"~"Lidl",i]',
-      'tesco': '["shop"="supermarket"]["name"~"Tesco",i]',
-      'asda': '["shop"="supermarket"]["name"~"Asda",i]',
-      'sainsbury': '["shop"="supermarket"]["name"~"Sainsbury",i]',
-      'sainsburys': '["shop"="supermarket"]["name"~"Sainsbury",i]',
-      'morrisons': '["shop"="supermarket"]["name"~"Morrisons",i]',
-      'co-op': '["shop"~"supermarket|convenience"]["name"~"Co-?op",i]',
-      'coop': '["shop"~"supermarket|convenience"]["name"~"Co-?op",i]',
+      'aldi': '["name"~"Aldi",i]',
+      'lidl': '["name"~"Lidl",i]',
+      'tesco': '["name"~"Tesco",i]',
+      'asda': '["name"~"Asda",i]',
+      'sainsbury': '["name"~"Sainsbury",i]',
+      'sainsburys': '["name"~"Sainsbury",i]',
+      'morrisons': '["name"~"Morrisons",i]',
+      'co-op': '["name"~"Co-?op",i]',
+      'coop': '["name"~"Co-?op",i]',
       'supermarket': '["shop"="supermarket"]',
       'pharmacy': '["amenity"="pharmacy"]',
       'chemist': '["amenity"="pharmacy"]',
@@ -599,7 +633,7 @@
     'https://overpass.openstreetmap.ru/api/interpreter'
   ];
 
-  async function searchOverpass(lat, lon, queryRaw, radiusMeters){
+  async function searchOverpass(lat, lon, queryRaw, radiusMeters, externalSignal){
     const filters = buildOverpassFilters(queryRaw);
     const around = `(around:${radiusMeters},${lat},${lon})`;
     const clauses = filters.map(f => `
@@ -618,14 +652,23 @@
     let lastError = null;
 
     for(const mirror of OVERPASS_MIRRORS){
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      if(externalSignal && externalSignal.aborted){
+        const e = new Error('CANCELLED');
+        throw e;
+      }
+
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), 7000);
+
+      // Abort this fetch if EITHER the per-mirror timeout fires OR the user clicks Stop.
+      const onExternalAbort = () => timeoutController.abort();
+      if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
 
       try{
         const res = await fetch(mirror, {
           method: 'POST',
           body: 'data=' + encodeURIComponent(ql),
-          signal: controller.signal
+          signal: timeoutController.signal
         });
         clearTimeout(timeoutId);
 
@@ -647,13 +690,20 @@
 
       } catch(err){
         clearTimeout(timeoutId);
-        lastError = err;
+
+        if(externalSignal && externalSignal.aborted){
+          throw new Error('CANCELLED');
+        }
         if(err.name === 'AbortError'){
           console.warn('Overpass mirror timed out (>7s):', mirror);
+          lastError = new Error('OVERPASS_TIMEOUT');
         } else {
           console.warn('Overpass mirror unreachable:', mirror, err);
+          lastError = err;
         }
         continue;
+      } finally {
+        if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
       }
     }
 
@@ -776,22 +826,27 @@
       return;
     }
 
+    searchCancelled = false;
+    activeController = new AbortController();
+    const signal = activeController.signal;
+
     searchBtn.disabled = true;
+    stopBtn.hidden = false;
     setStatus('Looking up postcode…', 'loading');
 
     try{
-      const origin = await geocodePostcode(postcodeRaw);
+      const origin = await geocodePostcode(postcodeRaw, signal);
 
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
       // Single search at a sensible radius first (one round-trip, not several).
       // Only widen once, and only if the first attempt came back empty.
-      let elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 8000);
+      let elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 8000, signal);
       let usedRadius = 8000;
 
       if(elements.length === 0){
         setStatus(`Nothing close by — widening the search…`, 'loading');
-        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 30000);
+        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 30000, signal);
         usedRadius = 30000;
       }
 
@@ -806,6 +861,11 @@
       renderResults(origin, places, queryRaw);
 
     } catch(err){
+      if(searchCancelled || err.message === 'CANCELLED' || err.name === 'AbortError'){
+        // Stop button already set the "Search stopped." message — don't overwrite it.
+        return;
+      }
+
       console.error('Search failed:', err);
 
       if(err.message === 'NOTFOUND'){
@@ -822,6 +882,8 @@
       resultsArea.innerHTML = '';
     } finally {
       searchBtn.disabled = false;
+      stopBtn.hidden = true;
+      activeController = null;
     }
   }
 
