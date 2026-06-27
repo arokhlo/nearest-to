@@ -857,10 +857,13 @@
 
     const rows = withDist.map(p=>{
       const d = formatDistance(p.dist);
-      const mapsURL = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`;
+      // Directions FROM the searched postcode TO this result, not just a pin on the map.
+      const directionsURL = `https://www.google.com/maps/dir/?api=1` +
+        `&origin=${encodeURIComponent(origin.label)}` +
+        `&destination=${p.lat},${p.lon}`;
       const addrLine = p.address
-        ? `<a href="${mapsURL}" target="_blank" rel="noopener">${escapeHTML(p.address)}</a>`
-        : `<a href="${mapsURL}" target="_blank" rel="noopener">View on map</a>`;
+        ? `<a href="${directionsURL}" target="_blank" rel="noopener">${escapeHTML(p.address)}</a>`
+        : `<a href="${directionsURL}" target="_blank" rel="noopener">Get directions</a>`;
       return `
         <li class="result">
           ${compassSVG(p.brg)}
