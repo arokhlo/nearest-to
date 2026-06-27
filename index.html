@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nearest To — find anything near a UK postcode</title>
+<style>
+
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#2B2B2B;
+    --paper:#F7F4EC;
+    --paper-raised:#FFFEFA;
+    --os-green:#1B3A2F;
+    --os-green-light:#2E5240;
+    --postbox-red:#C8102E;
+    --route-blue:#1A5FB4;
+    --hairline:#D4CFC0;
+    --hairline-strong:#B7AF98;
+    --muted:#6B6557;
+    --shadow: 0 1px 0 rgba(27,58,47,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(27,58,47,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    min-height:100vh;
+    padding: 28px 16px 60px;
+  }
+
+  .sheet{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Header: sorting-office stamp ---------- */
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom: 22px;
+    flex-wrap:wrap;
+  }
+
+  .stamp{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .stamp-mark{
+    width:54px;height:54px;
+    border:3px solid var(--os-green);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform: rotate(-8deg);
+    flex-shrink:0;
+    position:relative;
+  }
+  .stamp-mark::after{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border:1px solid var(--os-green);
+    border-radius:50%;
+  }
+  .stamp-mark span{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:800;
+    font-size:11px;
+    letter-spacing:0.5px;
+    color:var(--os-green);
+    transform: rotate(8deg);
+    text-align:center;
+    line-height:1.05;
+  }
+
+  h1{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:800;
+    font-size: 30px;
+    letter-spacing:-0.2px;
+    margin:0;
+    color:var(--os-green);
+    line-height:1.05;
+  }
+  .tagline{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .gb-tab{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:1px;
+    color:var(--paper);
+    background:var(--postbox-red);
+    padding:5px 10px;
+    border-radius:2px;
+    white-space:nowrap;
+    margin-top:4px;
+  }
+
+  /* ---------- Search panel ---------- */
+  .panel{
+    background:var(--paper-raised);
+    border:1px solid var(--hairline);
+    border-radius:6px;
+    padding:22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+
+  .field-row{
+    display:grid;
+    grid-template-columns: 1.1fr 1.4fr auto;
+    gap:12px;
+    align-items:end;
+  }
+  @media (max-width:620px){
+    .field-row{ grid-template-columns: 1fr; }
+  }
+
+  label{
+    display:block;
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--os-green);
+    margin-bottom:6px;
+  }
+
+  input[type="text"]{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:16px;
+    padding:11px 12px;
+    border:1.5px solid var(--hairline-strong);
+    border-radius:4px;
+    background:#fff;
+    color:var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input[type="text"]:focus{
+    outline:none;
+    border-color: var(--os-green);
+    box-shadow: 0 0 0 3px rgba(27,58,47,0.12);
+  }
+  input[type="text"]::placeholder{ color:#A8A091; }
+
+  .postcode-input{
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-weight:600;
+  }
+
+  button.go{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.4px;
+    background:var(--os-green);
+    color:var(--paper);
+    border:none;
+    border-radius:4px;
+    padding:12px 22px;
+    cursor:pointer;
+    transition: background .15s ease, transform .08s ease;
+    white-space:nowrap;
+  }
+  button.go:hover{ background:var(--os-green-light); }
+  button.go:active{ transform: translateY(1px); }
+  button.go:disabled{ background:#A8A091; cursor:wait; }
+
+  .quick-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:14px;
+  }
+  .chip{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:500;
+    background:transparent;
+    border:1px solid var(--hairline-strong);
+    color: var(--os-green);
+    padding:6px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .chip:hover{
+    background: var(--os-green);
+    color:var(--paper);
+    border-color: var(--os-green);
+  }
+
+  .hint{
+    margin-top:12px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .hint b{ color:var(--ink); }
+
+  /* ---------- Status / messages ---------- */
+  #status{
+    min-height: 20px;
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:14px;
+    padding-left:2px;
+  }
+  #status.error{ color: var(--postbox-red); font-weight:600; }
+  #status.loading::after{
+    content:"";
+    display:inline-block;
+    width:10px;
+  }
+
+  /* ---------- Results: gazetteer ledger ---------- */
+  .ledger-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    border-bottom: 2px solid var(--os-green);
+    padding-bottom:8px;
+    margin-bottom:4px;
+  }
+  .ledger-head h2{
+    font-family:'Archivo Narrow', sans-serif;
+    font-size:15px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--os-green);
+    margin:0;
+  }
+  .ledger-head .origin{
+    font-size:13px;
+    color:var(--muted);
+    font-weight:500;
+  }
+  .ledger-head .origin b{ color:var(--ink); }
+
+  ul.results{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+
+  li.result{
+    display:grid;
+    grid-template-columns: 48px 1fr auto;
+    gap:14px;
+    align-items:center;
+    padding:14px 4px;
+    border-bottom:1px solid var(--hairline);
+  }
+  li.result:hover{ background: rgba(27,58,47,0.035); }
+
+  .compass{
+    width:42px;height:42px;
+    flex-shrink:0;
+  }
+  .compass-ring{
+    fill:none;
+    stroke: var(--hairline-strong);
+    stroke-width:2;
+  }
+  .compass-tick{
+    stroke: var(--hairline-strong);
+    stroke-width:1.5;
+  }
+  .compass-needle{
+    stroke: var(--postbox-red);
+    stroke-width:2.5;
+    stroke-linecap:round;
+    transform-origin: 21px 21px;
+  }
+  .compass-pivot{
+    fill: var(--os-green);
+  }
+
+  .result-main .name{
+    font-weight:700;
+    font-size:15.5px;
+    color:var(--ink);
+    margin:0 0 2px;
+  }
+  .result-main .addr{
+    font-size:13px;
+    color:var(--muted);
+    margin:0;
+  }
+  .result-main .addr a{
+    color:var(--route-blue);
+    text-decoration:none;
+  }
+  .result-main .addr a:hover{ text-decoration:underline; }
+
+  .result-meta{
+    text-align:right;
+  }
+  .result-meta .dist{
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:800;
+    font-size:17px;
+    color:var(--os-green);
+    display:block;
+  }
+  .result-meta .dist small{
+    font-family:'Inter', sans-serif;
+    font-weight:500;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .result-meta .bearing{
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+  }
+
+  /* ---------- Empty / error states ---------- */
+  .empty-state{
+    text-align:center;
+    padding:48px 20px;
+    color:var(--muted);
+  }
+  .empty-state svg{ margin-bottom:14px; opacity:0.55; }
+  .empty-state p{ margin:0; font-size:14px; max-width:380px; margin:0 auto; }
+  .empty-state b{ color:var(--ink); }
+
+  footer{
+    text-align:center;
+    margin-top:28px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  footer a{ color: var(--route-blue); text-decoration:none; }
+  footer a:hover{ text-decoration:underline; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <header>
+    <div class="stamp">
+      <div class="stamp-mark"><span>NEAREST<br>TO</span></div>
+      <div>
+        <h1>Nearest To</h1>
+        <p class="tagline">Find anything near a UK postcode</p>
+      </div>
+    </div>
+    <div class="gb-tab">UK ONLY</div>
+  </header>
+
+  <div class="panel">
+    <div class="field-row">
+      <div>
+        <label for="postcode">Postcode</label>
+        <input type="text" id="postcode" class="postcode-input" placeholder="e.g. PR1 2HE" autocomplete="postal-code">
+      </div>
+      <div>
+        <label for="query">Looking for</label>
+        <input type="text" id="query" placeholder="e.g. Aldi, college, train station">
+      </div>
+      <button class="go" id="searchBtn">Find nearest</button>
+    </div>
+
+    <div class="quick-chips">
+      <button class="chip" data-query="supermarket">Supermarket</button>
+      <button class="chip" data-query="Aldi">Aldi</button>
+      <button class="chip" data-query="train station">Train station</button>
+      <button class="chip" data-query="college">College</button>
+      <button class="chip" data-query="pharmacy">Pharmacy</button>
+      <button class="chip" data-query="GP surgery">GP surgery</button>
+      <button class="chip" data-query="post office">Post office</button>
+      <button class="chip" data-query="bus stop">Bus stop</button>
+    </div>
+
+    <p class="hint">Type any kind of place — <b>shop name, service, or amenity</b> — and a postcode. Results are pulled live from OpenStreetMap and sorted by straight-line distance.</p>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="resultsArea">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="26" stroke="#B7AF98" stroke-width="2"/>
+        <line x1="32" y1="9" x2="32" y2="16" stroke="#B7AF98" stroke-width="2"/>
+        <line x1="32" y1="48" x2="32" y2="55" stroke="#B7AF98" stroke-width="2"/>
+        <line x1="9" y1="32" x2="16" y2="32" stroke="#B7AF98" stroke-width="2"/>
+        <line x1="48" y1="32" x2="55" y2="32" stroke="#B7AF98" stroke-width="2"/>
+        <path d="M32 18 L38 32 L32 46 L26 32 Z" fill="#C8102E"/>
+      </svg>
+      <p>Enter a postcode and what you're after, and results will line up here — nearest first, with distance and direction from your postcode.</p>
+    </div>
+  </div>
+
+  <footer>
+    Postcode lookup via <a href="https://postcodes.io" target="_blank" rel="noopener">postcodes.io</a> · Place data via <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const postcodeInput = document.getElementById('postcode');
+  const queryInput = document.getElementById('query');
+  const searchBtn = document.getElementById('searchBtn');
+  const statusEl = document.getElementById('status');
+  const resultsArea = document.getElementById('resultsArea');
+  const chips = document.querySelectorAll('.chip');
+
+  chips.forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      queryInput.value = chip.dataset.query;
+      queryInput.focus();
+    });
+  });
+
+  postcodeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+  queryInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+  searchBtn.addEventListener('click', doSearch);
+
+  function setStatus(msg, type){
+    statusEl.textContent = msg || '';
+    statusEl.className = type || '';
+  }
+
+  function haversineMeters(lat1, lon1, lat2, lon2){
+    const R = 6371000;
+    const toRad = d => d * Math.PI/180;
+    const dLat = toRad(lat2-lat1);
+    const dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function bearingDegrees(lat1, lon1, lat2, lon2){
+    const toRad = d => d * Math.PI/180;
+    const toDeg = r => r * 180/Math.PI;
+    const y = Math.sin(toRad(lon2-lon1)) * Math.cos(toRad(lat2));
+    const x = Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) - Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1));
+    let brng = toDeg(Math.atan2(y, x));
+    return (brng + 360) % 360;
+  }
+
+  function bearingToCompassLabel(deg){
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg/22.5) % 16];
+  }
+
+  function formatDistance(m){
+    if(m < 1000) return { val: Math.round(m), unit:'m' };
+    const miles = m / 1609.344;
+    return { val: miles.toFixed(miles < 10 ? 1 : 0), unit:'mi' };
+  }
+
+  function compassSVG(bearingDeg){
+    return `
+    <svg class="compass" viewBox="0 0 42 42">
+      <circle class="compass-ring" cx="21" cy="21" r="18"/>
+      <line class="compass-tick" x1="21" y1="3" x2="21" y2="7"/>
+      <line class="compass-tick" x1="21" y1="35" x2="21" y2="39"/>
+      <line class="compass-tick" x1="3" y1="21" x2="7" y2="21"/>
+      <line class="compass-tick" x1="35" y1="21" x2="39" y2="21"/>
+      <g class="compass-needle" style="transform: rotate(${bearingDeg}deg)">
+        <line x1="21" y1="21" x2="21" y2="8"/>
+      </g>
+      <circle class="compass-pivot" cx="21" cy="21" r="2.5"/>
+    </svg>`;
+  }
+
+  async function geocodePostcode(raw){
+    const pc = encodeURIComponent(raw.trim());
+    let res;
+    try{
+      res = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+    } catch(networkErr){
+      console.error('Postcode lookup network error:', networkErr);
+      const e = new Error('POSTCODE_NETWORK');
+      e.detail = networkErr.message;
+      throw e;
+    }
+    if(!res.ok){
+      if(res.status === 404) throw new Error('NOTFOUND');
+      const e = new Error('POSTCODE_HTTP');
+      e.detail = `HTTP ${res.status}`;
+      throw e;
+    }
+    const data = await res.json();
+    return { lat: data.result.latitude, lon: data.result.longitude, label: data.result.postcode };
+  }
+
+  // Map common free-text queries to OSM tag filters for better precision.
+  // Falls back to a generic name search if nothing matches.
+  function buildOverpassFilters(queryRaw){
+    const q = queryRaw.trim().toLowerCase();
+
+    const exactMap = {
+      'aldi': '["shop"="supermarket"]["name"~"Aldi",i]',
+      'lidl': '["shop"="supermarket"]["name"~"Lidl",i]',
+      'tesco': '["shop"="supermarket"]["name"~"Tesco",i]',
+      'asda': '["shop"="supermarket"]["name"~"Asda",i]',
+      'sainsbury': '["shop"="supermarket"]["name"~"Sainsbury",i]',
+      'sainsburys': '["shop"="supermarket"]["name"~"Sainsbury",i]',
+      'morrisons': '["shop"="supermarket"]["name"~"Morrisons",i]',
+      'co-op': '["shop"~"supermarket|convenience"]["name"~"Co-?op",i]',
+      'coop': '["shop"~"supermarket|convenience"]["name"~"Co-?op",i]',
+      'supermarket': '["shop"="supermarket"]',
+      'pharmacy': '["amenity"="pharmacy"]',
+      'chemist': '["amenity"="pharmacy"]',
+      'gp surgery': '["amenity"="doctors"]',
+      'gp': '["amenity"="doctors"]',
+      'doctor': '["amenity"="doctors"]',
+      'doctors': '["amenity"="doctors"]',
+      'dentist': '["amenity"="dentist"]',
+      'hospital': '["amenity"="hospital"]',
+      'post office': '["amenity"="post_office"]',
+      'train station': '["railway"="station"]',
+      'railway station': '["railway"="station"]',
+      'station': '["railway"="station"]',
+      'bus stop': '["highway"="bus_stop"]',
+      'bus station': '["amenity"="bus_station"]',
+      'college': '["amenity"="college"]',
+      'university': '["amenity"="university"]',
+      'school': '["amenity"="school"]',
+      'library': '["amenity"="library"]',
+      'park': '["leisure"="park"]',
+      'petrol station': '["amenity"="fuel"]',
+      'fuel station': '["amenity"="fuel"]',
+      'petrol': '["amenity"="fuel"]',
+      'gym': '["leisure"="fitness_centre"]',
+      'cinema': '["amenity"="cinema"]',
+      'restaurant': '["amenity"="restaurant"]',
+      'cafe': '["amenity"="cafe"]',
+      'coffee shop': '["amenity"="cafe"]',
+      'pub': '["amenity"="pub"]',
+      'bank': '["amenity"="bank"]',
+      'cash machine': '["amenity"="atm"]',
+      'atm': '["amenity"="atm"]',
+      'vet': '["amenity"="veterinary"]',
+      'dog park': '["leisure"="dog_park"]',
+      'playground': '["leisure"="playground"]',
+      'church': '["amenity"="place_of_worship"]',
+      'mosque': '["amenity"="place_of_worship"]["religion"="muslim"]',
+      'leisure centre': '["leisure"="sports_centre"]',
+      'swimming pool': '["leisure"="swimming_pool"]',
+      'car park': '["amenity"="parking"]',
+      'parking': '["amenity"="parking"]',
+      'recycling': '["amenity"="recycling"]',
+      'vets': '["amenity"="veterinary"]'
+    };
+
+    if(exactMap[q]) return [exactMap[q]];
+
+    // Partial matches against known keys (helps "nearest Aldi store" etc.)
+    const partial = [];
+    for(const key in exactMap){
+      if(q.includes(key)) partial.push(exactMap[key]);
+    }
+    if(partial.length) return [...new Set(partial)];
+
+    // Generic fallback: search by name across common POI categories
+    const escaped = queryRaw.trim().replace(/["\\]/g, '');
+    return [
+      `["name"~"${escaped}",i]["shop"]`,
+      `["name"~"${escaped}",i]["amenity"]`,
+      `["name"~"${escaped}",i]["leisure"]`,
+      `["name"~"${escaped}",i]["railway"]`
+    ];
+  }
+
+  const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.openstreetmap.ru/api/interpreter'
+  ];
+
+  async function searchOverpass(lat, lon, queryRaw, radiusMeters){
+    const filters = buildOverpassFilters(queryRaw);
+    const around = `(around:${radiusMeters},${lat},${lon})`;
+    const clauses = filters.map(f => `
+      node${f}${around};
+      way${f}${around};
+    `).join('\n');
+
+    const ql = `
+      [out:json][timeout:25];
+      (
+        ${clauses}
+      );
+      out center 40;
+    `;
+
+    let lastError = null;
+
+    for(const mirror of OVERPASS_MIRRORS){
+      try{
+        const res = await fetch(mirror, {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(ql)
+        });
+
+        if(!res.ok){
+          lastError = new Error(`OVERPASS_HTTP_${res.status}`);
+          console.warn('Overpass mirror failed', mirror, res.status);
+          continue;
+        }
+
+        let data;
+        try{
+          data = await res.json();
+        } catch(parseErr){
+          lastError = new Error('OVERPASS_BAD_RESPONSE');
+          console.warn('Overpass returned non-JSON (likely rate-limited):', mirror, parseErr);
+          continue;
+        }
+        return data.elements || [];
+
+      } catch(err){
+        lastError = err;
+        console.warn('Overpass mirror unreachable:', mirror, err);
+        continue;
+      }
+    }
+
+    const detail = lastError ? (lastError.message || String(lastError)) : 'unknown';
+    const e = new Error('OVERPASS_FAIL');
+    e.detail = detail;
+    throw e;
+  }
+
+  function elementToPlace(el){
+    const tags = el.tags || {};
+    const lat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
+    const lon = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
+    if(lat === null || lon === null) return null;
+
+    const name = tags.name || tags.brand || tags.operator || humaniseTagType(tags) || 'Unnamed location';
+
+    const addrParts = [
+      tags['addr:housenumber'] && tags['addr:street'] ? `${tags['addr:housenumber']} ${tags['addr:street']}` : tags['addr:street'],
+      tags['addr:city'] || tags['addr:town'],
+      tags['addr:postcode']
+    ].filter(Boolean);
+
+    return {
+      name,
+      lat, lon,
+      address: addrParts.join(', '),
+      postcode: tags['addr:postcode'] || null
+    };
+  }
+
+  function humaniseTagType(tags){
+    const val = tags.shop || tags.amenity || tags.leisure || tags.railway;
+    if(!val) return null;
+    return val.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function dedupeByLocation(places){
+    const seen = new Set();
+    return places.filter(p=>{
+      const key = `${p.lat.toFixed(4)},${p.lon.toFixed(4)},${p.name}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function renderResults(origin, places, queryRaw){
+    if(!places.length){
+      resultsArea.innerHTML = `
+        <div class="empty-state">
+          <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="26" stroke="#B7AF98" stroke-width="2"/>
+            <line x1="20" y1="20" x2="44" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="44" y1="20" x2="20" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <p>No results for "<b>${escapeHTML(queryRaw)}</b>" within range of <b>${escapeHTML(origin.label)}</b>. Try a wider or more general term, e.g. "supermarket" instead of a specific brand.</p>
+        </div>`;
+      return;
+    }
+
+    const withDist = places.map(p=>{
+      const dist = haversineMeters(origin.lat, origin.lon, p.lat, p.lon);
+      const brg = bearingDegrees(origin.lat, origin.lon, p.lat, p.lon);
+      return Object.assign({}, p, { dist, brg });
+    }).sort((a,b)=>a.dist-b.dist).slice(0, 20);
+
+    const rows = withDist.map(p=>{
+      const d = formatDistance(p.dist);
+      const mapsURL = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`;
+      const addrLine = p.address
+        ? `<a href="${mapsURL}" target="_blank" rel="noopener">${escapeHTML(p.address)}</a>`
+        : `<a href="${mapsURL}" target="_blank" rel="noopener">View on map</a>`;
+      return `
+        <li class="result">
+          ${compassSVG(p.brg)}
+          <div class="result-main">
+            <p class="name">${escapeHTML(p.name)}</p>
+            <p class="addr">${addrLine}</p>
+          </div>
+          <div class="result-meta">
+            <span class="dist">${d.val}<small> ${d.unit}</small></span>
+            <span class="bearing">${bearingToCompassLabel(p.brg)}</span>
+          </div>
+        </li>`;
+    }).join('');
+
+    resultsArea.innerHTML = `
+      <div class="ledger-head">
+        <h2>Nearest matches</h2>
+        <span class="origin">from <b>${escapeHTML(origin.label)}</b></span>
+      </div>
+      <ul class="results">${rows}</ul>
+    `;
+  }
+
+  function escapeHTML(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function doSearch(){
+    const postcodeRaw = postcodeInput.value.trim();
+    const queryRaw = queryInput.value.trim();
+
+    if(window.location.protocol === 'file:'){
+      setStatus('This page was opened directly from a file (file://) — most browsers block live data requests in that mode. Please open it through a web server (or use the version inside Claude) instead of double-clicking the file.', 'error');
+      return;
+    }
+
+    if(!postcodeRaw){
+      setStatus('Enter a UK postcode to search from.', 'error');
+      postcodeInput.focus();
+      return;
+    }
+    if(!queryRaw){
+      setStatus('Enter what you\'re looking for — a shop name, amenity, or service.', 'error');
+      queryInput.focus();
+      return;
+    }
+
+    searchBtn.disabled = true;
+    setStatus('Looking up postcode…', 'loading');
+
+    try{
+      const origin = await geocodePostcode(postcodeRaw);
+
+      setStatus(`Searching near ${origin.label}…`, 'loading');
+
+      // Progressive radius: start local, widen if nothing found
+      const radii = [2000, 5000, 15000, 40000];
+      let elements = [];
+      let usedRadius = radii[0];
+
+      for(const r of radii){
+        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, r);
+        usedRadius = r;
+        if(elements.length > 0) break;
+      }
+
+      const places = dedupeByLocation(
+        elements.map(elementToPlace).filter(Boolean)
+      );
+
+      setStatus(places.length
+        ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.`
+        : 'No matches found nearby.', '');
+
+      renderResults(origin, places, queryRaw);
+
+    } catch(err){
+      console.error('Search failed:', err);
+
+      if(err.message === 'NOTFOUND'){
+        setStatus(`Couldn't find postcode "${postcodeRaw}" — check it's a valid UK postcode.`, 'error');
+      } else if(err.message === 'POSTCODE_NETWORK'){
+        setStatus(`Couldn't reach the postcode lookup service. Check your internet connection. (${err.detail || ''})`, 'error');
+      } else if(err.message === 'POSTCODE_HTTP'){
+        setStatus(`Postcode service returned an error. (${err.detail || ''})`, 'error');
+      } else if(err.message === 'OVERPASS_FAIL'){
+        setStatus(`Couldn't reach the place-search service right now. (${err.detail || 'all mirrors failed'}) Please try again shortly.`, 'error');
+      } else {
+        setStatus(`Something went wrong: ${err.message || err}`, 'error');
+      }
+      resultsArea.innerHTML = '';
+    } finally {
+      searchBtn.disabled = false;
+    }
+  }
+
+})();
+</script>
+
+</body>
+</html>
