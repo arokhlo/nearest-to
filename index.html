@@ -548,21 +548,14 @@
     return { lat: data.result.latitude, lon: data.result.longitude, label: data.result.postcode };
   }
 
-  // Map common free-text queries to OSM tag filters for better precision.
-  // Falls back to a generic name search if nothing matches.
+  // Map common free-text queries to OSM tag filters for Overpass.
+  // This only covers AMENITY/CATEGORY type searches (pharmacy, college, etc).
+  // Brand names (Lidl, Tesco...) and anything unrecognised go to Nominatim instead —
+  // see isBrandOrFreeTextQuery() below.
   function buildOverpassFilters(queryRaw){
     const q = queryRaw.trim().toLowerCase();
 
     const exactMap = {
-      'aldi': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Aldi",i]',
-      'lidl': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Lidl",i]',
-      'tesco': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Tesco",i]',
-      'asda': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Asda",i]',
-      'sainsbury': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Sainsbury",i]',
-      'sainsburys': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Sainsbury",i]',
-      'morrisons': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Morrisons",i]',
-      'co-op': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Co-?op",i]',
-      'coop': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Co-?op",i]',
       'supermarket': '["shop"="supermarket"]',
       'pharmacy': '["amenity"="pharmacy"]',
       'chemist': '["amenity"="pharmacy"]',
@@ -610,21 +603,21 @@
 
     if(exactMap[q]) return [exactMap[q]];
 
-    // Partial matches against known keys (helps "nearest Aldi store" etc.)
+    // Partial matches against known category keys (e.g. "nearest college campus")
     const partial = [];
     for(const key in exactMap){
       if(q.includes(key)) partial.push(exactMap[key]);
     }
     if(partial.length) return [...new Set(partial)];
 
-    // Generic fallback: search by name. Kept to two broad tag groups
-    // (POIs that have either shop/amenity OR leisure/railway) rather than
-    // four separate clauses — halves the work Overpass has to do per query.
-    const escaped = queryRaw.trim().replace(/["\\]/g, '');
-    return [
-      `["name"~"${escaped}",i]["shop"]`,
-      `["name"~"${escaped}",i]["amenity"]`
-    ];
+    // No known category match — caller should use Nominatim instead.
+    return null;
+  }
+
+  // True if the query matches a known Overpass category (fast, indexed path).
+  // False means: brand name or free text — route to Nominatim instead.
+  function hasOverpassCategory(queryRaw){
+    return buildOverpassFilters(queryRaw) !== null;
   }
 
   const OVERPASS_MIRRORS = [
@@ -633,8 +626,99 @@
     'https://overpass.openstreetmap.ru/api/interpreter'
   ];
 
+  // Nominatim: OpenStreetMap's official search/geocoding service.
+  // Used for brand names and free-text queries — simpler and more
+  // reliably available than hand-built Overpass QL for "search by name".
+  async function searchNominatim(lat, lon, queryRaw, radiusMeters, externalSignal){
+    // Build a bounding box around the origin point (viewbox), used to bias
+    // and restrict results to the local area.
+    const latDelta = radiusMeters / 111000; // ~111km per degree latitude
+    const lonDelta = radiusMeters / (111000 * Math.cos(lat * Math.PI / 180));
+    const viewbox = [
+      lon - lonDelta, lat + latDelta,
+      lon + lonDelta, lat - latDelta
+    ].join(',');
+
+    const params = new URLSearchParams({
+      q: queryRaw,
+      format: 'jsonv2',
+      viewbox: viewbox,
+      bounded: '1',
+      limit: '25',
+      addressdetails: '1'
+    });
+
+    const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
+    const onExternalAbort = () => timeoutController.abort();
+    if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
+
+    try{
+      const res = await fetch(url, {
+        signal: timeoutController.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      clearTimeout(timeoutId);
+
+      if(!res.ok){
+        const e = new Error('NOMINATIM_HTTP');
+        e.detail = `HTTP ${res.status}`;
+        throw e;
+      }
+
+      let data;
+      try{
+        data = await res.json();
+      } catch(parseErr){
+        const e = new Error('NOMINATIM_BAD_RESPONSE');
+        e.detail = parseErr.message;
+        throw e;
+      }
+
+      return (data || []).map(item => ({
+        name: item.namedetails && item.namedetails.name
+          ? item.namedetails.name
+          : (item.display_name ? item.display_name.split(',')[0] : queryRaw),
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+        address: buildNominatimAddress(item.address),
+        postcode: item.address ? item.address.postcode : null
+      })).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
+
+    } catch(err){
+      clearTimeout(timeoutId);
+      if(externalSignal && externalSignal.aborted){
+        throw new Error('CANCELLED');
+      }
+      if(err.name === 'AbortError'){
+        const e = new Error('NOMINATIM_TIMEOUT');
+        throw e;
+      }
+      throw err;
+    } finally {
+      if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+    }
+  }
+
+  function buildNominatimAddress(addr){
+    if(!addr) return '';
+    const parts = [
+      addr.house_number && addr.road ? `${addr.house_number} ${addr.road}` : addr.road,
+      addr.suburb || addr.town || addr.city,
+      addr.postcode
+    ].filter(Boolean);
+    return parts.join(', ');
+  }
+
   async function searchOverpass(lat, lon, queryRaw, radiusMeters, externalSignal){
     const filters = buildOverpassFilters(queryRaw);
+    if(!filters){
+      // Should not normally happen — caller checks hasOverpassCategory() first —
+      // but guard against it rather than sending Overpass a malformed empty query.
+      return [];
+    }
     const around = `(around:${radiusMeters},${lat},${lon})`;
     const clauses = filters.map(f => `
       node${f}${around};
@@ -806,6 +890,15 @@
     return div.innerHTML;
   }
 
+  async function findPlaces(lat, lon, queryRaw, radiusMeters, signal){
+    if(hasOverpassCategory(queryRaw)){
+      const elements = await searchOverpass(lat, lon, queryRaw, radiusMeters, signal);
+      return elements.map(elementToPlace).filter(Boolean);
+    } else {
+      return await searchNominatim(lat, lon, queryRaw, radiusMeters, signal);
+    }
+  }
+
   async function doSearch(){
     const postcodeRaw = postcodeInput.value.trim();
     const queryRaw = queryInput.value.trim();
@@ -841,18 +934,16 @@
 
       // Single search at a sensible radius first (one round-trip, not several).
       // Only widen once, and only if the first attempt came back empty.
-      let elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 8000, signal);
+      let places = await findPlaces(origin.lat, origin.lon, queryRaw, 8000, signal);
       let usedRadius = 8000;
 
-      if(elements.length === 0){
+      if(places.length === 0){
         setStatus(`Nothing close by — widening the search…`, 'loading');
-        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 30000, signal);
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 30000, signal);
         usedRadius = 30000;
       }
 
-      const places = dedupeByLocation(
-        elements.map(elementToPlace).filter(Boolean)
-      );
+      places = dedupeByLocation(places);
 
       setStatus(places.length
         ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.`
@@ -876,6 +967,12 @@
         setStatus(`Postcode service returned an error. (${err.detail || ''})`, 'error');
       } else if(err.message === 'OVERPASS_FAIL'){
         setStatus(`Couldn't reach the place-search service right now. (${err.detail || 'all mirrors failed'}) Please try again shortly.`, 'error');
+      } else if(err.message === 'NOMINATIM_TIMEOUT'){
+        setStatus(`The place-search service took too long to respond. Please try again.`, 'error');
+      } else if(err.message === 'NOMINATIM_HTTP'){
+        setStatus(`Place-search service returned an error. (${err.detail || ''}) Please try again shortly.`, 'error');
+      } else if(err.message === 'NOMINATIM_BAD_RESPONSE'){
+        setStatus(`Place-search service returned an unreadable response. Please try again.`, 'error');
       } else {
         setStatus(`Something went wrong: ${err.message || err}`, 'error');
       }
