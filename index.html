@@ -554,15 +554,15 @@
     const q = queryRaw.trim().toLowerCase();
 
     const exactMap = {
-      'aldi': '["name"~"Aldi",i]',
-      'lidl': '["name"~"Lidl",i]',
-      'tesco': '["name"~"Tesco",i]',
-      'asda': '["name"~"Asda",i]',
-      'sainsbury': '["name"~"Sainsbury",i]',
-      'sainsburys': '["name"~"Sainsbury",i]',
-      'morrisons': '["name"~"Morrisons",i]',
-      'co-op': '["name"~"Co-?op",i]',
-      'coop': '["name"~"Co-?op",i]',
+      'aldi': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Aldi",i]',
+      'lidl': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Lidl",i]',
+      'tesco': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Tesco",i]',
+      'asda': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Asda",i]',
+      'sainsbury': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Sainsbury",i]',
+      'sainsburys': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Sainsbury",i]',
+      'morrisons': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Morrisons",i]',
+      'co-op': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Co-?op",i]',
+      'coop': '["shop"~"^(supermarket|convenience|department_store)$"]["name"~"Co-?op",i]',
       'supermarket': '["shop"="supermarket"]',
       'pharmacy': '["amenity"="pharmacy"]',
       'chemist': '["amenity"="pharmacy"]',
@@ -658,7 +658,7 @@
       }
 
       const timeoutController = new AbortController();
-      const timeoutId = setTimeout(() => timeoutController.abort(), 7000);
+      const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
 
       // Abort this fetch if EITHER the per-mirror timeout fires OR the user clicks Stop.
       const onExternalAbort = () => timeoutController.abort();
