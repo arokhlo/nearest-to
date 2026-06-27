@@ -583,13 +583,13 @@
     }
     if(partial.length) return [...new Set(partial)];
 
-    // Generic fallback: search by name across common POI categories
+    // Generic fallback: search by name. Kept to two broad tag groups
+    // (POIs that have either shop/amenity OR leisure/railway) rather than
+    // four separate clauses — halves the work Overpass has to do per query.
     const escaped = queryRaw.trim().replace(/["\\]/g, '');
     return [
       `["name"~"${escaped}",i]["shop"]`,
-      `["name"~"${escaped}",i]["amenity"]`,
-      `["name"~"${escaped}",i]["leisure"]`,
-      `["name"~"${escaped}",i]["railway"]`
+      `["name"~"${escaped}",i]["amenity"]`
     ];
   }
 
@@ -608,21 +608,26 @@
     `).join('\n');
 
     const ql = `
-      [out:json][timeout:25];
+      [out:json][timeout:12];
       (
         ${clauses}
       );
-      out center 40;
+      out center 25;
     `;
 
     let lastError = null;
 
     for(const mirror of OVERPASS_MIRRORS){
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+
       try{
         const res = await fetch(mirror, {
           method: 'POST',
-          body: 'data=' + encodeURIComponent(ql)
+          body: 'data=' + encodeURIComponent(ql),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if(!res.ok){
           lastError = new Error(`OVERPASS_HTTP_${res.status}`);
@@ -641,8 +646,13 @@
         return data.elements || [];
 
       } catch(err){
+        clearTimeout(timeoutId);
         lastError = err;
-        console.warn('Overpass mirror unreachable:', mirror, err);
+        if(err.name === 'AbortError'){
+          console.warn('Overpass mirror timed out (>7s):', mirror);
+        } else {
+          console.warn('Overpass mirror unreachable:', mirror, err);
+        }
         continue;
       }
     }
@@ -774,15 +784,15 @@
 
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
-      // Progressive radius: start local, widen if nothing found
-      const radii = [2000, 5000, 15000, 40000];
-      let elements = [];
-      let usedRadius = radii[0];
+      // Single search at a sensible radius first (one round-trip, not several).
+      // Only widen once, and only if the first attempt came back empty.
+      let elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 8000);
+      let usedRadius = 8000;
 
-      for(const r of radii){
-        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, r);
-        usedRadius = r;
-        if(elements.length > 0) break;
+      if(elements.length === 0){
+        setStatus(`Nothing close by — widening the search…`, 'loading');
+        elements = await searchOverpass(origin.lat, origin.lon, queryRaw, 30000);
+        usedRadius = 30000;
       }
 
       const places = dedupeByLocation(
