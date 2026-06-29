@@ -169,6 +169,117 @@
     font-weight:600;
   }
 
+  .postcode-field{
+    position:relative;
+    display:flex;
+  }
+  .postcode-field input[type="text"]{
+    padding-right:46px;
+  }
+  .locate-btn{
+    position:absolute;
+    right:5px;
+    top:50%;
+    transform:translateY(-50%);
+    width:34px;height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(26,95,180,0.18);
+    border:1px solid rgba(26,95,180,0.25);
+    border-radius:50%;
+    color:rgba(26,95,180,0.65);
+    cursor:pointer;
+    box-shadow: none;
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .locate-btn:hover{
+    background:var(--route-blue);
+    color:#fff;
+    border-color:var(--route-blue);
+    box-shadow: 0 2px 5px rgba(26,95,180,0.35);
+  }
+  .locate-btn:active{ transform:translateY(-50%) scale(0.94); }
+  .locate-btn.locating{
+    background:var(--os-green);
+    color:#fff;
+    border-color:var(--os-green);
+    animation: locate-pulse 1.1s ease-in-out infinite;
+  }
+  .locate-btn:disabled{ cursor:wait; }
+  @keyframes locate-pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.45; }
+  }
+
+  .locate-hint{
+    margin:8px 0 0;
+    font-size:12.5px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .locate-hint-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--route-blue);
+    color:#fff;
+    flex-shrink:0;
+  }
+
+  .current-address{
+    margin:6px 0 0;
+    font-size:13px;
+    color:var(--os-green);
+    font-weight:600;
+  }
+  .current-address::before{
+    content:"📍 ";
+  }
+  .current-address-link{
+    color:var(--os-green);
+    text-decoration:none;
+    border-bottom: 1.5px solid rgba(27,58,47,0.3);
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .current-address-link:hover{
+    color:var(--route-blue);
+    border-bottom-color: var(--route-blue);
+  }
+
+  .share-address-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    margin-left:9px;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--route-blue);
+    background:transparent;
+    border:1px solid var(--route-blue);
+    border-radius:14px;
+    padding:2px 9px 2px 8px;
+    cursor:pointer;
+    vertical-align:middle;
+    transition: background .15s ease, color .15s ease;
+  }
+  .share-address-btn:hover{
+    background:var(--route-blue);
+    color:#fff;
+  }
+  .share-address-btn:disabled{
+    cursor:default;
+    background:var(--os-green);
+    color:#fff;
+    border-color:var(--os-green);
+  }
+  .share-address-btn svg{ flex-shrink:0; }
+
   button.go{
     font-family:'Archivo Narrow', sans-serif;
     font-weight:700;
@@ -320,6 +431,16 @@
     color:var(--ink);
     margin:0 0 2px;
   }
+  .result-main .name .name-link{
+    color:var(--ink);
+    text-decoration:none;
+    border-bottom: 1.5px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .result-main .name .name-link:hover{
+    color:var(--route-blue);
+    border-bottom-color: var(--route-blue);
+  }
   .result-main .addr{
     font-size:13px;
     color:var(--muted);
@@ -328,6 +449,7 @@
   .result-main .addr a{
     color:var(--route-blue);
     text-decoration:none;
+    font-size:12.5px;
   }
   .result-main .addr a:hover{ text-decoration:underline; }
 
@@ -372,6 +494,12 @@
   }
   footer a{ color: var(--route-blue); text-decoration:none; }
   footer a:hover{ text-decoration:underline; }
+  footer .credit{
+    margin:6px 0 0;
+    font-size:11.5px;
+    color:var(--muted);
+    opacity:0.85;
+  }
 
   @media (prefers-reduced-motion: reduce){
     *{ transition:none !important; animation:none !important; }
@@ -397,7 +525,15 @@
     <div class="field-row">
       <div>
         <label for="postcode">Postcode</label>
-        <input type="text" id="postcode" class="postcode-input" placeholder="e.g. PR1 2HE" autocomplete="postal-code">
+        <div class="postcode-field">
+          <input type="text" id="postcode" class="postcode-input" placeholder="e.g. PR1 2HE" autocomplete="postal-code">
+          <button type="button" class="locate-btn" id="locateBtn" title="Use my current location" aria-label="Use my current location">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div>
         <label for="query">Looking for</label>
@@ -419,6 +555,11 @@
     </div>
 
     <p class="hint">Type any kind of place — <b>shop name, service, or amenity</b> — and a postcode. Results are pulled live from OpenStreetMap and sorted by straight-line distance.</p>
+    <p class="locate-hint">Tap <span class="locate-hint-icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span> to use your current location instead of typing a postcode.</p>
+    <p class="current-address" id="currentAddress" hidden><span id="currentAddressText"></span><button type="button" class="share-address-btn" id="shareAddressBtn" title="Share this address">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7M16 6l-4-4-4 4M12 2v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Share
+      </button></p>
   </div>
 
   <div id="status"></div>
@@ -439,6 +580,7 @@
 
   <footer>
     Postcode lookup via <a href="https://postcodes.io" target="_blank" rel="noopener">postcodes.io</a> · Place data via <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+    <p class="credit">Prepared by Dr Mortaza Arokhlo: <a href="mailto:arokhlo687@gmail.com">arokhlo687@gmail.com</a></p>
   </footer>
 
 </div>
@@ -449,6 +591,10 @@
   const queryInput = document.getElementById('query');
   const searchBtn = document.getElementById('searchBtn');
   const stopBtn = document.getElementById('stopBtn');
+  const locateBtn = document.getElementById('locateBtn');
+  const currentAddressEl = document.getElementById('currentAddress');
+  const currentAddressTextEl = document.getElementById('currentAddressText');
+  const shareAddressBtn = document.getElementById('shareAddressBtn');
   const statusEl = document.getElementById('status');
   const resultsArea = document.getElementById('resultsArea');
   const chips = document.querySelectorAll('.chip');
@@ -457,6 +603,9 @@
   // so the Stop button can cancel it immediately.
   let activeController = null;
   let searchCancelled = false;
+  let lastResolvedAddress = '';
+  let locationRequestId = 0;
+  let lastLocationCoords = null; // { lat, lon } from GPS
 
   chips.forEach(chip=>{
     chip.addEventListener('click', ()=>{
@@ -476,6 +625,16 @@
     searchBtn.disabled = false;
     stopBtn.hidden = true;
   });
+
+  locateBtn.addEventListener('click', useMyLocation);
+  shareAddressBtn.addEventListener('click', shareCurrentAddress);
+
+  function setCurrentAddressLink(line, lat, lon){
+    lastResolvedAddress = line;
+    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+    currentAddressTextEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="current-address-link" title="View on Google Maps">${escapeHTML(line)}</a>`;
+    currentAddressEl.hidden = false;
+  }
 
   function setStatus(msg, type){
     statusEl.textContent = msg || '';
@@ -546,6 +705,321 @@
     }
     const data = await res.json();
     return { lat: data.result.latitude, lon: data.result.longitude, label: data.result.postcode };
+  }
+
+  // Reverse-geocode GPS coordinates to the nearest UK postcode via postcodes.io.
+  async function reverseGeocodeToPostcode(lat, lon){
+    let res;
+    try{
+      res = await fetch(`https://api.postcodes.io/postcodes?lon=${lon}&lat=${lat}&limit=1`);
+    } catch(networkErr){
+      const e = new Error('POSTCODE_NETWORK');
+      e.detail = networkErr.message;
+      throw e;
+    }
+    if(!res.ok){
+      const e = new Error('POSTCODE_HTTP');
+      e.detail = `HTTP ${res.status}`;
+      throw e;
+    }
+    const data = await res.json();
+    if(!data.result || !data.result.length) throw new Error('NOTFOUND');
+    return data.result[0].postcode;
+  }
+
+  // Reverse-geocode GPS coordinates to structured address components via
+  // Nominatim (OpenStreetMap) — the same service already used elsewhere in
+  // this app for free-text place search. We return the structured address
+  // object (not Nominatim's display_name) because Nominatim's own postcode
+  // guess can disagree with the verified one from postcodes.io — the
+  // caller builds the final address line using the verified postcode.
+  async function reverseGeocodeToAddress(lat, lon){
+    const params = new URLSearchParams({
+      lat: String(lat),
+      lon: String(lon),
+      format: 'jsonv2',
+      addressdetails: '1',
+      zoom: '18'
+    });
+    const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
+
+    let res;
+    try{
+      res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    } catch(networkErr){
+      const e = new Error('NOMINATIM_NETWORK');
+      e.detail = networkErr.message;
+      throw e;
+    }
+    if(!res.ok){
+      const e = new Error('NOMINATIM_HTTP');
+      e.detail = `HTTP ${res.status}`;
+      throw e;
+    }
+    let data;
+    try{
+      data = await res.json();
+    } catch(parseErr){
+      const e = new Error('NOMINATIM_BAD_RESPONSE');
+      e.detail = parseErr.message;
+      throw e;
+    }
+    if(!data || !data.address) throw new Error('NOTFOUND');
+    return { name: data.name || null, address: data.address };
+  }
+
+  // Builds a short, precise address line, always using the verified
+  // postcode (from postcodes.io) rather than Nominatim's own postcode
+  // guess, so the postcode shown here always matches the one filled into
+  // the Postcode box.
+  //
+  // Precision: if a specific named place is known (a building, office,
+  // shop, etc.) that's included. The house number + street is taken from
+  // `housePoint` when available — a dedicated OSM address-point lookup
+  // matched to the exact GPS coordinate — since Nominatim's own reverse
+  // geocode sometimes only resolves to the nearest road and omits the
+  // house number. Nominatim's own house_number/road is used as a fallback
+  // when no closer address point was found.
+  function buildCurrentAddressLine(result, housePoint, verifiedPostcode){
+    const addr = (result && result.address) || {};
+
+    const pointName = (result && result.name) ||
+      addr.building || addr.office || addr.amenity ||
+      addr.shop || addr.tourism || addr.leisure || null;
+
+    let streetPart = null;
+    if(housePoint && housePoint.housenumber && housePoint.street){
+      streetPart = `${housePoint.housenumber} ${housePoint.street}`;
+    } else if(addr.house_number && addr.road){
+      streetPart = `${addr.house_number} ${addr.road}`;
+    } else {
+      streetPart = addr.road || (housePoint && housePoint.street) || null;
+    }
+
+    const parts = [];
+    if(pointName && pointName !== streetPart) parts.push(pointName);
+    if(streetPart) parts.push(streetPart);
+    parts.push(addr.city || addr.town || addr.village);
+    parts.push(verifiedPostcode);
+
+    return parts.filter(Boolean).join(', ');
+  }
+
+  // Searches nearby OSM address points (nodes/ways tagged with a house
+  // number) and returns the one closest to the exact GPS coordinate.
+  // Tries a radius based on the device's reported GPS accuracy first,
+  // then a wider radius if nothing turned up.
+  async function findNearestHouseNumber(lat, lon, accuracyMeters){
+    const baseRadius = Math.min(300, Math.max(40, Math.round((accuracyMeters || 50) * 1.5)));
+    const radii = [baseRadius, Math.min(400, baseRadius * 2)];
+
+    for(const radius of radii){
+      try{
+        const found = await queryNearestAddressPoint(lat, lon, radius);
+        if(found) return found;
+      } catch(err){
+        console.warn('House-number lookup failed at radius', radius, err);
+      }
+    }
+    return null;
+  }
+
+  async function queryNearestAddressPoint(lat, lon, radiusMeters){
+    const around = `(around:${radiusMeters},${lat},${lon})`;
+    const ql = `
+      [out:json][timeout:10];
+      (
+        node${around}["addr:housenumber"];
+        way${around}["addr:housenumber"];
+      );
+      out center 40;
+    `;
+
+    for(const mirror of OVERPASS_MIRRORS){
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), 6000);
+
+      try{
+        const res = await fetch(mirror, {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(ql),
+          signal: timeoutController.signal
+        });
+        clearTimeout(timeoutId);
+        if(!res.ok) continue;
+
+        let data;
+        try{ data = await res.json(); } catch(parseErr){ continue; }
+
+        const elements = data.elements || [];
+        if(!elements.length) return null; // nothing within this radius — let caller try wider
+
+        let nearest = null;
+        let nearestDist = Infinity;
+        for(const el of elements){
+          const elat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
+          const elon = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
+          if(elat === null || elon === null) continue;
+          const dist = haversineMeters(lat, lon, elat, elon);
+          if(dist < nearestDist){ nearestDist = dist; nearest = el; }
+        }
+        if(!nearest) return null;
+
+        const tags = nearest.tags || {};
+        return {
+          housenumber: tags['addr:housenumber'] || null,
+          street: tags['addr:street'] || null,
+          distanceMeters: Math.round(nearestDist)
+        };
+
+      } catch(err){
+        clearTimeout(timeoutId);
+        continue; // try the next mirror
+      }
+    }
+    return null;
+  }
+
+  // Background refinement: once the quick address is already on screen,
+  // try to pin down the exact house number via OSM address points and
+  // swap it in if found. Guarded against a newer location request having
+  // started in the meantime.
+  async function refineAddressWithHouseNumber(lat, lon, accuracyMeters, addressResult, verifiedPostcode, requestId){
+    const housePoint = await findNearestHouseNumber(lat, lon, accuracyMeters);
+    if(!housePoint) return;
+    if(requestId !== locationRequestId) return; // a newer request has since started
+
+    const line = buildCurrentAddressLine(addressResult, housePoint, verifiedPostcode);
+    if(line && lastLocationCoords){
+      setCurrentAddressLink(line, lastLocationCoords.lat, lastLocationCoords.lon);
+    } else if(line){
+      currentAddressTextEl.textContent = line;
+      lastResolvedAddress = line;
+      currentAddressEl.hidden = false;
+    }
+  }
+
+  // Reads the device's current location (with the user's permission) and
+  // fills the postcode field with the nearest UK postcode, as a default
+  // starting point the user can still edit before searching. Also shows
+  // a short address line underneath — built from Nominatim's street-level
+  // detail but always carrying the SAME verified postcode that was put in
+  // the box, so the two can never disagree.
+  function useMyLocation(){
+    if(!('geolocation' in navigator)){
+      setStatus('Your browser does not support location lookup. Please enter a postcode manually.', 'error');
+      return;
+    }
+
+    const requestId = ++locationRequestId;
+
+    locateBtn.disabled = true;
+    locateBtn.classList.add('locating');
+    setStatus('Finding your location…', 'loading');
+    currentAddressEl.hidden = true;
+    currentAddressTextEl.textContent = '';
+    lastResolvedAddress = '';
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try{
+          const { latitude, longitude, accuracy } = position.coords;
+
+          // Run both lookups in parallel for speed, but only ever use the
+          // postcode from postcodes.io as the source of truth — Nominatim's
+          // address details are used purely for the street/area wording.
+          const [postcodeResult, addressResult] = await Promise.allSettled([
+            reverseGeocodeToPostcode(latitude, longitude),
+            reverseGeocodeToAddress(latitude, longitude)
+          ]);
+
+          if(postcodeResult.status === 'fulfilled'){
+            const postcode = postcodeResult.value;
+            postcodeInput.value = postcode;
+            setStatus(`Set postcode to ${postcode} from your current location.`, '');
+            queryInput.focus();
+
+            lastLocationCoords = { lat: latitude, lon: longitude };
+
+            if(addressResult.status === 'fulfilled'){
+              const line = buildCurrentAddressLine(addressResult.value, null, postcode);
+              if(line){
+                setCurrentAddressLink(line, latitude, longitude);
+              }
+
+              // Progressive enhancement: refine with the exact house
+              // number in the background — this can take a few seconds,
+              // so it must not hold up the spinner or the result already shown.
+              refineAddressWithHouseNumber(latitude, longitude, accuracy, addressResult.value, postcode, requestId);
+            }
+          } else {
+            const err = postcodeResult.reason;
+            if(err.message === 'NOTFOUND'){
+              setStatus('Could not match your location to a UK postcode. Please enter one manually.', 'error');
+            } else {
+              setStatus(`Could not look up a postcode for your location. (${err.detail || err.message || err}) Please enter one manually.`, 'error');
+            }
+          }
+
+        } finally {
+          locateBtn.disabled = false;
+          locateBtn.classList.remove('locating');
+        }
+      },
+      (err) => {
+        locateBtn.disabled = false;
+        locateBtn.classList.remove('locating');
+        if(err.code === err.PERMISSION_DENIED){
+          setStatus('Location access was denied. Please enter your postcode manually.', 'error');
+        } else if(err.code === err.TIMEOUT){
+          setStatus('Location lookup timed out. Please try again or enter your postcode manually.', 'error');
+        } else {
+          setStatus('Could not access your location. Please enter your postcode manually.', 'error');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
+  // Shares the resolved current-location address — via the native share
+  // sheet where supported (mobile browsers, most modern desktop browsers),
+  // or by copying it to the clipboard as a fallback.
+  async function shareCurrentAddress(){
+    if(!lastResolvedAddress) return;
+
+    if(navigator.share){
+      try{
+        await navigator.share({ title: 'My current location', text: lastResolvedAddress });
+      } catch(err){
+        // AbortError just means the user closed the share sheet — not a real failure.
+        if(err.name !== 'AbortError') console.warn('Share failed:', err);
+      }
+      return;
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      try{
+        await navigator.clipboard.writeText(lastResolvedAddress);
+        flashShareButton('Copied!');
+      } catch(err){
+        console.warn('Clipboard write failed:', err);
+        flashShareButton('Copy failed');
+      }
+      return;
+    }
+
+    flashShareButton('Copy failed');
+  }
+
+  // Briefly swaps the Share button's label to give feedback, then restores it.
+  function flashShareButton(tempLabel){
+    const original = shareAddressBtn.innerHTML;
+    shareAddressBtn.textContent = tempLabel;
+    shareAddressBtn.disabled = true;
+    setTimeout(() => {
+      shareAddressBtn.innerHTML = original;
+      shareAddressBtn.disabled = false;
+    }, 1500);
   }
 
   // Map common free-text queries to OSM tag filters for Overpass.
@@ -861,14 +1335,16 @@
       const directionsURL = `https://www.google.com/maps/dir/?api=1` +
         `&origin=${encodeURIComponent(origin.label)}` +
         `&destination=${p.lat},${p.lon}`;
+      // Google Maps pin for the place itself (clicking name opens place on map)
+      const placePinURL = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`;
       const addrLine = p.address
-        ? `<a href="${directionsURL}" target="_blank" rel="noopener">${escapeHTML(p.address)}</a>`
-        : `<a href="${directionsURL}" target="_blank" rel="noopener">Get directions</a>`;
+        ? `<a href="${directionsURL}" target="_blank" rel="noopener" title="Get directions from ${escapeHTML(origin.label)}">${escapeHTML(p.address)}&nbsp;↗</a>`
+        : `<a href="${directionsURL}" target="_blank" rel="noopener" title="Get directions">Get directions&nbsp;↗</a>`;
       return `
         <li class="result">
           ${compassSVG(p.brg)}
           <div class="result-main">
-            <p class="name">${escapeHTML(p.name)}</p>
+            <p class="name"><a href="${placePinURL}" target="_blank" rel="noopener" class="name-link" title="View on Google Maps">${escapeHTML(p.name)}</a></p>
             <p class="addr">${addrLine}</p>
           </div>
           <div class="result-meta">
