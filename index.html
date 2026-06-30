@@ -834,49 +834,41 @@
       out center 40;
     `;
 
-    for(const mirror of OVERPASS_MIRRORS){
-      const timeoutController = new AbortController();
-      const timeoutId = setTimeout(() => timeoutController.abort(), 6000);
-
-      try{
+    let data;
+    try{
+      data = await raceOverpassMirrors(async (mirror, signal) => {
         const res = await fetch(mirror, {
           method: 'POST',
           body: 'data=' + encodeURIComponent(ql),
-          signal: timeoutController.signal
+          signal
         });
-        clearTimeout(timeoutId);
-        if(!res.ok) continue;
-
-        let data;
-        try{ data = await res.json(); } catch(parseErr){ continue; }
-
-        const elements = data.elements || [];
-        if(!elements.length) return null; // nothing within this radius — let caller try wider
-
-        let nearest = null;
-        let nearestDist = Infinity;
-        for(const el of elements){
-          const elat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
-          const elon = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
-          if(elat === null || elon === null) continue;
-          const dist = haversineMeters(lat, lon, elat, elon);
-          if(dist < nearestDist){ nearestDist = dist; nearest = el; }
-        }
-        if(!nearest) return null;
-
-        const tags = nearest.tags || {};
-        return {
-          housenumber: tags['addr:housenumber'] || null,
-          street: tags['addr:street'] || null,
-          distanceMeters: Math.round(nearestDist)
-        };
-
-      } catch(err){
-        clearTimeout(timeoutId);
-        continue; // try the next mirror
-      }
+        if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
+        return res.json();
+      }, null, 6000);
+    } catch(err){
+      return null;
     }
-    return null;
+
+    const elements = data.elements || [];
+    if(!elements.length) return null; // nothing within this radius — let caller try wider
+
+    let nearest = null;
+    let nearestDist = Infinity;
+    for(const el of elements){
+      const elat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
+      const elon = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
+      if(elat === null || elon === null) continue;
+      const dist = haversineMeters(lat, lon, elat, elon);
+      if(dist < nearestDist){ nearestDist = dist; nearest = el; }
+    }
+    if(!nearest) return null;
+
+    const tags = nearest.tags || {};
+    return {
+      housenumber: tags['addr:housenumber'] || null,
+      street: tags['addr:street'] || null,
+      distanceMeters: Math.round(nearestDist)
+    };
   }
 
   // Background refinement: once the quick address is already on screen,
@@ -1324,8 +1316,43 @@
   const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.openstreetmap.ru/api/interpreter'
+    'https://overpass.openstreetmap.ru/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter'
   ];
+
+  // Fires the same request at every Overpass mirror SIMULTANEOUSLY and
+  // returns whichever one answers first (instead of trying them one at a
+  // time, which meant a single slow/dead mirror could eat 9+ seconds
+  // before the next was even attempted). Stragglers are aborted once a
+  // winner is found, so this is both faster AND more resilient — only
+  // failing if every mirror fails.
+  async function raceOverpassMirrors(buildRequest, externalSignal, perMirrorTimeoutMs){
+    if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+
+    const controllers = OVERPASS_MIRRORS.map(() => new AbortController());
+    const timeoutIds = controllers.map(c => setTimeout(() => c.abort(), perMirrorTimeoutMs));
+    const onExternalAbort = () => controllers.forEach(c => c.abort());
+    if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
+
+    const attempts = OVERPASS_MIRRORS.map((mirror, i) =>
+      buildRequest(mirror, controllers[i].signal)
+    );
+
+    try{
+      return await Promise.any(attempts);
+    } catch(aggregateErr){
+      if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+      const reasons = (aggregateErr && aggregateErr.errors || [])
+        .map(e => (e && e.message) ? e.message : String(e));
+      const e = new Error('OVERPASS_FAIL');
+      e.detail = reasons.length ? reasons.join('; ') : 'all mirrors failed';
+      throw e;
+    } finally {
+      timeoutIds.forEach(clearTimeout);
+      controllers.forEach(c => { if(!c.signal.aborted) c.abort(); });
+      if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+    }
+  }
 
   // Nominatim: OpenStreetMap's official search/geocoding service.
   // Used for brand names and free-text queries — simpler and more
@@ -1408,6 +1435,42 @@
     return str.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&');
   }
 
+  // Builds an Overpass QL regex (without surrounding quotes) that matches a
+  // term flexibly — not just the exact text, but close variants of it too:
+  //  - as written, case-insensitive
+  //  - for short acronym-like terms (e.g. "DDL"): with optional
+  //    spaces/punctuation between each letter, since some OSM names are
+  //    entered as "D D L Davies" rather than "DDL Davies"
+  //  - with optional trailing "s" (singular/plural variants)
+  //  - allowing minor character drift around the edges (an extra/missing
+  //    character at the very start or end), so close-but-not-exact spellings
+  //    of a name still match
+  function buildFlexibleRegex(term){
+    const escaped = escapeOverpassRegex(term);
+    const alternatives = new Set([escaped]);
+
+    if(/^[A-Za-z0-9]{2,8}$/.test(term)){
+      const spaced = term.split('').map(escapeOverpassRegex).join('[\\s.\\-]*');
+      alternatives.add(spaced);
+    }
+
+    // Singular/plural drift, e.g. "Boots" should also catch "Boot".
+    if(/[A-Za-z]$/.test(term) && !/s$/i.test(term)){
+      alternatives.add(escaped + 's?');
+    } else if(/s$/i.test(term)){
+      alternatives.add(escaped.replace(/s$/i, '') + '?s?');
+    }
+
+    // Allow one character of slack at the start/end for words of reasonable
+    // length, to catch close spelling variants (e.g. "Sainsbury" vs
+    // "Sainsburys", "Tesco" vs "Tescos", minor OSM data typos).
+    if(term.replace(/[^\p{L}\p{N}]/gu, '').length >= 4){
+      alternatives.add('.?' + escaped + '.?');
+    }
+
+    return [...alternatives].join('|');
+  }
+
   // Generic English category/descriptor words that, on their own, are NOT
   // part of a place's actual name — e.g. in "pharmacy DDL" or a mixed
   // query like "داروخانه DDL" ("pharmacy DDL"), the real searchable name
@@ -1449,20 +1512,6 @@
     'local','please','around','here','some','any','good','best','that','is','open'
   ]);
 
-  // Builds an Overpass QL regex (without surrounding quotes) that matches a
-  // term flexibly: as written, OR — for short acronym-like terms (e.g.
-  // "DDL") — with optional spaces/punctuation between each letter, since
-  // some OSM names are entered as "D D L Davies" rather than "DDL Davies".
-  function buildFlexibleRegex(term){
-    const escaped = escapeOverpassRegex(term);
-    const alternatives = new Set([escaped]);
-    if(/^[A-Za-z0-9]{2,8}$/.test(term)){
-      const spaced = term.split('').map(escapeOverpassRegex).join('[\\\\s.\\\\-]*');
-      alternatives.add(spaced);
-    }
-    return [...alternatives].join('|');
-  }
-
   // Free-text / brand-name search run directly against Overpass, matching
   // the OSM "name" (and "brand") tags case-insensitively. This catches a lot
   // of real places that Nominatim's geocoder index misses or ranks low —
@@ -1470,7 +1519,9 @@
   // brand name embedded in a longer/mixed-language query — so it's run
   // alongside Nominatim rather than instead of it. Accepts one or more
   // search terms (e.g. the full query plus an extracted name token) and
-  // merges results from all of them.
+  // merges results from all of them. Each term is matched flexibly (see
+  // buildFlexibleRegex), so close variants/near-misses of the name are
+  // picked up too, not just an exact match.
   async function searchOverpassByName(lat, lon, terms, radiusMeters, externalSignal){
     const termList = (Array.isArray(terms) ? terms : [terms]).filter(Boolean);
     if(!termList.length) return [];
@@ -1478,7 +1529,7 @@
     if(!pattern) return [];
     const around = `(around:${radiusMeters},${lat},${lon})`;
     const ql = `
-      [out:json][timeout:12];
+      [out:json][timeout:10];
       (
         nwr["name"~"${pattern}",i]${around};
         nwr["brand"~"${pattern}",i]${around};
@@ -1487,42 +1538,26 @@
       out center 25;
     `;
 
-    let lastError = null;
-    for(const mirror of OVERPASS_MIRRORS){
-      if(externalSignal && externalSignal.aborted){
-        throw new Error('CANCELLED');
-      }
-      const timeoutController = new AbortController();
-      const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
-      const onExternalAbort = () => timeoutController.abort();
-      if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
-
-      try{
+    try{
+      const data = await raceOverpassMirrors(async (mirror, signal) => {
         const res = await fetch(mirror, {
           method: 'POST',
           body: 'data=' + encodeURIComponent(ql),
-          signal: timeoutController.signal
+          signal
         });
-        clearTimeout(timeoutId);
-        if(!res.ok){ lastError = new Error(`OVERPASS_HTTP_${res.status}`); continue; }
-        let data;
-        try{ data = await res.json(); }
-        catch(parseErr){ lastError = new Error('OVERPASS_BAD_RESPONSE'); continue; }
-        return (data.elements || []).map(elementToPlace).filter(Boolean);
-      } catch(err){
-        clearTimeout(timeoutId);
-        if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
-        lastError = err;
-        continue;
-      } finally {
-        if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
-      }
+        if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
+        return res.json();
+      }, externalSignal, 9000);
+
+      return (data.elements || []).map(elementToPlace).filter(Boolean);
+    } catch(err){
+      if(err.message === 'CANCELLED') throw err;
+      // Name-search is a supplementary source — if every mirror fails, just
+      // return no extra results rather than failing the whole search, since
+      // Nominatim may still succeed.
+      console.warn('Overpass name-search unavailable:', err);
+      return [];
     }
-    // Name-search is a supplementary source — if every mirror fails, just
-    // return no extra results rather than failing the whole search, since
-    // Nominatim may still succeed.
-    console.warn('Overpass name-search unavailable:', lastError);
-    return [];
   }
 
   function buildNominatimAddress(addr){
@@ -1549,75 +1584,24 @@
     `).join('\n');
 
     const ql = `
-      [out:json][timeout:12];
+      [out:json][timeout:10];
       (
         ${clauses}
       );
       out center 25;
     `;
 
-    let lastError = null;
+    const data = await raceOverpassMirrors(async (mirror, signal) => {
+      const res = await fetch(mirror, {
+        method: 'POST',
+        body: 'data=' + encodeURIComponent(ql),
+        signal
+      });
+      if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
+      return res.json();
+    }, externalSignal, 9000);
 
-    for(const mirror of OVERPASS_MIRRORS){
-      if(externalSignal && externalSignal.aborted){
-        const e = new Error('CANCELLED');
-        throw e;
-      }
-
-      const timeoutController = new AbortController();
-      const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
-
-      // Abort this fetch if EITHER the per-mirror timeout fires OR the user clicks Stop.
-      const onExternalAbort = () => timeoutController.abort();
-      if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
-
-      try{
-        const res = await fetch(mirror, {
-          method: 'POST',
-          body: 'data=' + encodeURIComponent(ql),
-          signal: timeoutController.signal
-        });
-        clearTimeout(timeoutId);
-
-        if(!res.ok){
-          lastError = new Error(`OVERPASS_HTTP_${res.status}`);
-          console.warn('Overpass mirror failed', mirror, res.status);
-          continue;
-        }
-
-        let data;
-        try{
-          data = await res.json();
-        } catch(parseErr){
-          lastError = new Error('OVERPASS_BAD_RESPONSE');
-          console.warn('Overpass returned non-JSON (likely rate-limited):', mirror, parseErr);
-          continue;
-        }
-        return data.elements || [];
-
-      } catch(err){
-        clearTimeout(timeoutId);
-
-        if(externalSignal && externalSignal.aborted){
-          throw new Error('CANCELLED');
-        }
-        if(err.name === 'AbortError'){
-          console.warn('Overpass mirror timed out (>7s):', mirror);
-          lastError = new Error('OVERPASS_TIMEOUT');
-        } else {
-          console.warn('Overpass mirror unreachable:', mirror, err);
-          lastError = err;
-        }
-        continue;
-      } finally {
-        if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
-      }
-    }
-
-    const detail = lastError ? (lastError.message || String(lastError)) : 'unknown';
-    const e = new Error('OVERPASS_FAIL');
-    e.detail = detail;
-    throw e;
+    return (data.elements || []).map(elementToPlace).filter(Boolean);
   }
 
   function elementToPlace(el){
@@ -1719,37 +1703,41 @@
   }
 
   async function findPlaces(lat, lon, queryRaw, radiusMeters, signal){
+    // Always run a name/brand-based search (Overpass by-name + Nominatim)
+    // alongside any category match, not instead of it — this way a search
+    // for "pharmacy" still also surfaces places whose names are close
+    // variants of what was typed, and a category query doesn't miss a
+    // specifically-named branch just because of how it's tagged in OSM.
+    const tasks = [];
+
     if(hasOverpassCategory(queryRaw)){
-      const elements = await searchOverpass(lat, lon, queryRaw, radiusMeters, signal);
-      return elements.map(elementToPlace).filter(Boolean);
-    } else {
-      // If the query mixes a generic/non-English word with a brand-like
-      // token (e.g. "داروخانه DDL" = "pharmacy DDL"), pull that token out
-      // so the brand name itself still gets searched even though the full
-      // sentence wouldn't match anything in OSM or Nominatim verbatim.
-      const nameToken = extractNameToken(queryRaw);
-      const nominatimQueries = nameToken ? [queryRaw, nameToken] : [queryRaw];
-      const overpassTerms = nameToken ? [queryRaw, nameToken] : [queryRaw];
-
-      const nominatimPromises = nominatimQueries.map(q =>
-        searchNominatim(lat, lon, q, radiusMeters, signal).catch(err => { throw err; })
-      );
-      const overpassPromise = searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal);
-
-      const settled = await Promise.allSettled([...nominatimPromises, overpassPromise]);
-
-      const allFailed = settled.every(r => r.status === 'rejected');
-      if(allFailed){
-        const cancelled = settled.find(r => r.reason && r.reason.message === 'CANCELLED');
-        throw cancelled ? cancelled.reason : settled[0].reason;
-      }
-
-      const combined = [];
-      for(const r of settled){
-        if(r.status === 'fulfilled') combined.push(...r.value);
-      }
-      return combined;
+      tasks.push(searchOverpass(lat, lon, queryRaw, radiusMeters, signal));
     }
+
+    // If the query mixes a generic/non-English word with a brand-like
+    // token (e.g. "داروخانه DDL" = "pharmacy DDL"), pull that token out
+    // so the brand name itself still gets searched even though the full
+    // sentence wouldn't match anything in OSM or Nominatim verbatim.
+    const nameToken = extractNameToken(queryRaw);
+    const nominatimQueries = nameToken ? [queryRaw, nameToken] : [queryRaw];
+    const overpassTerms = nameToken ? [queryRaw, nameToken] : [queryRaw];
+
+    tasks.push(...nominatimQueries.map(q => searchNominatim(lat, lon, q, radiusMeters, signal)));
+    tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
+
+    const settled = await Promise.allSettled(tasks);
+
+    const allFailed = settled.every(r => r.status === 'rejected');
+    if(allFailed){
+      const cancelled = settled.find(r => r.reason && r.reason.message === 'CANCELLED');
+      throw cancelled ? cancelled.reason : settled[0].reason;
+    }
+
+    const combined = [];
+    for(const r of settled){
+      if(r.status === 'fulfilled') combined.push(...r.value);
+    }
+    return combined;
   }
 
   async function doSearch(){
