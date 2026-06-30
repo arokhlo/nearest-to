@@ -1313,6 +1313,57 @@
     return buildOverpassFilters(queryRaw) !== null;
   }
 
+  // ── Photon (Komoot) — fast, dedicated geocoding API built on Nominatim data ──
+  // Much more reliable than raw Overpass for free-text / brand searches,
+  // and significantly faster (dedicated infrastructure, no QL compilation).
+  async function searchPhoton(lat, lon, queryRaw, radiusMeters, externalSignal){
+    const params = new URLSearchParams({
+      q: queryRaw,
+      lat: String(lat),
+      lon: String(lon),
+      limit: '30',
+      lang: 'en'
+    });
+    const url = `https://photon.komoot.io/api/?${params.toString()}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const onAbort = () => controller.abort();
+    if(externalSignal) externalSignal.addEventListener('abort', onAbort);
+
+    try{
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      clearTimeout(timeoutId);
+      if(!res.ok) return [];
+      const data = await res.json();
+      const features = data.features || [];
+      // Filter to bounding box (Photon's radius bias isn't guaranteed)
+      return features.map(f => {
+        const [flon, flat] = f.geometry.coordinates;
+        const dist = haversineMeters(lat, lon, flat, flon);
+        if(dist > radiusMeters) return null;
+        const p = f.properties || {};
+        const name = p.name || p.street || queryRaw;
+        const addrParts = [
+          p.housenumber && p.street ? `${p.housenumber} ${p.street}` : p.street,
+          p.city || p.town || p.village,
+          p.postcode
+        ].filter(Boolean);
+        return { name, lat: flat, lon: flon, address: addrParts.join(', '), postcode: p.postcode || null };
+      }).filter(Boolean);
+    } catch(err){
+      clearTimeout(timeoutId);
+      if(externalSignal) externalSignal.removeEventListener('abort', onAbort);
+      return [];
+    } finally {
+      if(externalSignal) externalSignal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  // ── Overpass mirrors (kept as fallback for structured category queries) ──
   const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
@@ -1320,12 +1371,6 @@
     'https://overpass.private.coffee/api/interpreter'
   ];
 
-  // Fires the same request at every Overpass mirror SIMULTANEOUSLY and
-  // returns whichever one answers first (instead of trying them one at a
-  // time, which meant a single slow/dead mirror could eat 9+ seconds
-  // before the next was even attempted). Stragglers are aborted once a
-  // winner is found, so this is both faster AND more resilient — only
-  // failing if every mirror fails.
   async function raceOverpassMirrors(buildRequest, externalSignal, perMirrorTimeoutMs){
     if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
 
@@ -1506,8 +1551,51 @@
     return joined.toLowerCase() === queryRaw.trim().toLowerCase() ? null : joined;
   }
 
-  // Shared with buildOverpassFilters()'s filler-word stripping.
-  const FILLER_WORDS_GLOBAL = new Set([
+  // ── Synonym / related-term expansion ──────────────────────────────────────
+  // Maps common query words (including Persian equivalents) to the best
+  // English search term to use with Nominatim / Photon. This dramatically
+  // improves results when the user types in Persian, uses abbreviations,
+  // or uses a word that is closely related but not exact.
+  const SYNONYM_MAP = {
+    // Persian → English
+    'داروخانه': 'pharmacy', 'دارو': 'pharmacy', 'دکتر': 'doctor', 'بیمارستان': 'hospital',
+    'سوپرمارکت': 'supermarket', 'فروشگاه': 'shop', 'کافه': 'cafe', 'رستوران': 'restaurant',
+    'بانک': 'bank', 'مدرسه': 'school', 'دانشگاه': 'university', 'پارک': 'park',
+    'ایستگاه': 'station', 'اتوبوس': 'bus', 'دندانپزشک': 'dentist', 'کتابخانه': 'library',
+    'پمپ بنزین': 'petrol station', 'باشگاه': 'gym', 'مسجد': 'mosque',
+    // English abbreviations / colloquial
+    'gp': 'doctor surgery', 'a&e': 'hospital emergency', 'aldi': 'Aldi supermarket',
+    'lidl': 'Lidl supermarket', 'tesco': 'Tesco supermarket', 'asda': 'Asda supermarket',
+    'morrisons': 'Morrisons supermarket', 'sainsburys': 'Sainsbury\'s supermarket',
+    'waitrose': 'Waitrose supermarket', 'boots': 'Boots pharmacy', 'greggs': 'Greggs bakery',
+    'mcdonalds': 'McDonald\'s', "mcdonald's": "McDonald's", 'kfc': 'KFC restaurant',
+    'costa': 'Costa Coffee', 'starbucks': 'Starbucks', 'subway': 'Subway',
+    'post office': 'post office', 'gp surgery': 'doctor surgery',
+    'ev charging': 'electric vehicle charging station', 'ev charger': 'electric vehicle charging',
+    'cash machine': 'ATM cashpoint', 'cashpoint': 'ATM bank', 'cash point': 'ATM bank',
+    'off licence': 'off licence alcohol shop', 'off license': 'off licence alcohol shop',
+    'corner shop': 'convenience store', 'mini market': 'convenience store',
+    'petrol station': 'petrol station fuel', 'petrol': 'petrol station fuel',
+    'car park': 'parking', 'car wash': 'car wash', 'mot': 'MOT car repair garage',
+    'leisure centre': 'sports centre leisure', 'swimming pool': 'swimming pool leisure',
+    'police': 'police station', 'fire station': 'fire station'
+  };
+
+  // Translates / expands a query using the synonym map before searching.
+  // Returns the expanded query string (may be the same as input).
+  function expandQuery(queryRaw){
+    const lower = queryRaw.trim().toLowerCase();
+    if(SYNONYM_MAP[lower]) return SYNONYM_MAP[lower];
+    // Try partial matches — if the query starts with or contains a known synonym key
+    for(const [key, val] of Object.entries(SYNONYM_MAP)){
+      if(key.length > 2 && lower.includes(key)){
+        // Append the expansion alongside the original so both are searched
+        const remainder = lower.replace(key, '').trim();
+        return remainder ? `${val} ${remainder}` : val;
+      }
+    }
+    return queryRaw;
+  }
     'nearest','near','nearby','closest','find','search','my','me','the','a','an',
     'local','please','around','here','some','any','good','best','that','is','open'
   ]);
@@ -1642,8 +1730,11 @@
     });
   }
 
-  function renderResults(origin, places, queryRaw){
+  function renderResults(origin, places, queryRaw, queryExpanded){
     if(!places.length){
+      const displayTerm = queryExpanded && queryExpanded !== queryRaw
+        ? `${escapeHTML(queryRaw)} <small>(searched as: "${escapeHTML(queryExpanded)}")</small>`
+        : escapeHTML(queryRaw);
       resultsArea.innerHTML = `
         <div class="empty-state">
           <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
@@ -1651,7 +1742,7 @@
             <line x1="20" y1="20" x2="44" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
             <line x1="44" y1="20" x2="20" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
-          <p>No results for "<b>${escapeHTML(queryRaw)}</b>" within range of <b>${escapeHTML(origin.label)}</b>. Try a wider or more general term, e.g. "supermarket" instead of a specific brand.</p>
+          <p>No results for "<b>${displayTerm}</b>" within range of <b>${escapeHTML(origin.label)}</b>. Try a wider or more general term, e.g. "supermarket" instead of a specific brand.</p>
         </div>`;
       return;
     }
@@ -1703,27 +1794,28 @@
   }
 
   async function findPlaces(lat, lon, queryRaw, radiusMeters, signal){
-    // Always run a name/brand-based search (Overpass by-name + Nominatim)
-    // alongside any category match, not instead of it — this way a search
-    // for "pharmacy" still also surfaces places whose names are close
-    // variants of what was typed, and a category query doesn't miss a
-    // specifically-named branch just because of how it's tagged in OSM.
     const tasks = [];
 
-    if(hasOverpassCategory(queryRaw)){
-      tasks.push(searchOverpass(lat, lon, queryRaw, radiusMeters, signal));
-    }
+    // Photon: fastest, most reliable free-text and brand-name search.
+    tasks.push(searchPhoton(lat, lon, queryRaw, radiusMeters, signal));
 
-    // If the query mixes a generic/non-English word with a brand-like
-    // token (e.g. "داروخانه DDL" = "pharmacy DDL"), pull that token out
-    // so the brand name itself still gets searched even though the full
-    // sentence wouldn't match anything in OSM or Nominatim verbatim.
+    // Nominatim: also run in parallel — gives good results for UK amenities
+    // and catches things Photon might miss.
     const nameToken = extractNameToken(queryRaw);
     const nominatimQueries = nameToken ? [queryRaw, nameToken] : [queryRaw];
-    const overpassTerms = nameToken ? [queryRaw, nameToken] : [queryRaw];
-
     tasks.push(...nominatimQueries.map(q => searchNominatim(lat, lon, q, radiusMeters, signal)));
-    tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
+
+    // Overpass structured category query — only when a known OSM tag matches,
+    // since it is the most reliable for e.g. "all pharmacies nearby".
+    if(hasOverpassCategory(queryRaw)){
+      tasks.push(searchOverpass(lat, lon, queryRaw, radiusMeters, signal).catch(() => []));
+    }
+
+    // Overpass name-based search — run only for shorter radii to avoid timeout.
+    if(radiusMeters <= 15000){
+      const overpassTerms = nameToken ? [queryRaw, nameToken] : [queryRaw];
+      tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
+    }
 
     const settled = await Promise.allSettled(tasks);
 
@@ -1760,6 +1852,9 @@
       return;
     }
 
+    // Expand/translate the query (handles Persian, abbreviations, synonyms)
+    const queryExpanded = expandQuery(queryRaw);
+
     searchCancelled = false;
     activeController = new AbortController();
     const signal = activeController.signal;
@@ -1773,30 +1868,30 @@
 
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
-      // Single search at a sensible radius first (one round-trip, not several).
-      // Only widen if needed — up to two more, progressively larger, attempts.
-      let places = await findPlaces(origin.lat, origin.lon, queryRaw, 8000, signal);
-      let usedRadius = 8000;
+      // First pass: 5 km — fast, covers most urban needs.
+      let places = await findPlaces(origin.lat, origin.lon, queryExpanded, 5000, signal);
+      let usedRadius = 5000;
 
       if(places.length === 0){
-        setStatus(`Nothing close by — widening the search…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryRaw, 30000, signal);
-        usedRadius = 30000;
+        setStatus(`Nothing close by — widening to 20 km…`, 'loading');
+        places = await findPlaces(origin.lat, origin.lon, queryExpanded, 20000, signal);
+        usedRadius = 20000;
       }
 
       if(places.length === 0){
-        setStatus(`Still nothing — widening further…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryRaw, 80000, signal);
-        usedRadius = 80000;
+        setStatus(`Still nothing — widening to 60 km…`, 'loading');
+        places = await findPlaces(origin.lat, origin.lon, queryExpanded, 60000, signal);
+        usedRadius = 60000;
       }
 
       places = dedupeByLocation(places);
 
+      const expandedNote = queryExpanded !== queryRaw ? ` (searched as: "${queryExpanded}")` : '';
       setStatus(places.length
-        ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.`
-        : 'No matches found nearby.', '');
+        ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
+        : `No matches found nearby.${expandedNote}`, '');
 
-      renderResults(origin, places, queryRaw);
+      renderResults(origin, places, queryRaw, queryExpanded);
 
     } catch(err){
       if(searchCancelled || err.message === 'CANCELLED' || err.name === 'AbortError'){
@@ -1813,7 +1908,7 @@
       } else if(err.message === 'POSTCODE_HTTP'){
         setStatus(`Postcode service returned an error. (${err.detail || ''})`, 'error');
       } else if(err.message === 'OVERPASS_FAIL'){
-        setStatus(`Couldn't reach the place-search service right now. (${err.detail || 'all mirrors failed'}) Please try again shortly.`, 'error');
+        setStatus(`Place search encountered a temporary issue — please try again in a moment.`, 'error');
       } else if(err.message === 'NOMINATIM_TIMEOUT'){
         setStatus(`The place-search service took too long to respond. Please try again.`, 'error');
       } else if(err.message === 'NOMINATIM_HTTP'){
