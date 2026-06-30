@@ -1071,19 +1071,247 @@
       'car park': '["amenity"="parking"]',
       'parking': '["amenity"="parking"]',
       'recycling': '["amenity"="recycling"]',
-      'vets': '["amenity"="veterinary"]'
+      'vets': '["amenity"="veterinary"]',
+
+      // --- additional shops ---
+      'newsagent': '["shop"="newsagent"]',
+      'newsagents': '["shop"="newsagent"]',
+      'off licence': '["shop"="alcohol"]',
+      'off license': '["shop"="alcohol"]',
+      'liquor store': '["shop"="alcohol"]',
+      'alcohol shop': '["shop"="alcohol"]',
+      'corner shop': '["shop"="convenience"]',
+      'convenience store': '["shop"="convenience"]',
+      'mini market': '["shop"="convenience"]',
+      'bakery': '["shop"="bakery"]',
+      'baker': '["shop"="bakery"]',
+      'butcher': '["shop"="butcher"]',
+      'butchers': '["shop"="butcher"]',
+      'greengrocer': '["shop"="greengrocer"]',
+      'greengrocers': '["shop"="greengrocer"]',
+      'fishmonger': '["shop"="seafood"]',
+      'hairdresser': '["shop"="hairdresser"]',
+      'hairdressers': '["shop"="hairdresser"]',
+      'barber': '["shop"="hairdresser"]',
+      'barbers': '["shop"="hairdresser"]',
+      'beauty salon': '["shop"="beauty"]',
+      'nail salon': '["shop"="beauty"]',
+      'florist': '["shop"="florist"]',
+      'florists': '["shop"="florist"]',
+      'bookshop': '["shop"="books"]',
+      'bookshops': '["shop"="books"]',
+      'bookstore': '["shop"="books"]',
+      'charity shop': '["shop"="charity"]',
+      'charity shops': '["shop"="charity"]',
+      'thrift store': '["shop"="charity"]',
+      'clothes shop': '["shop"="clothes"]',
+      'clothing store': '["shop"="clothes"]',
+      'shoe shop': '["shop"="shoes"]',
+      'shoe shops': '["shop"="shoes"]',
+      'electronics store': '["shop"="electronics"]',
+      'hardware store': '["shop"="hardware"]',
+      'diy store': '["shop"="doityourself"]',
+      'garden centre': '["shop"="garden_centre"]',
+      'garden center': '["shop"="garden_centre"]',
+      'jewellers': '["shop"="jewelry"]',
+      'jewelers': '["shop"="jewelry"]',
+      'jewellery shop': '["shop"="jewelry"]',
+      'opticians': '["shop"="optician"]',
+      'optician': '["shop"="optician"]',
+      'dry cleaner': '["shop"="dry_cleaning"]',
+      'dry cleaners': '["shop"="dry_cleaning"]',
+      'laundrette': '["shop"="laundry"]',
+      'laundromat': '["shop"="laundry"]',
+      'launderette': '["shop"="laundry"]',
+      'tailor': '["shop"="tailor"]',
+      'mobile phone shop': '["shop"="mobile_phone"]',
+      'phone shop': '["shop"="mobile_phone"]',
+      'toy shop': '["shop"="toys"]',
+      'toy shops': '["shop"="toys"]',
+      'pet shop': '["shop"="pet"]',
+      'pet store': '["shop"="pet"]',
+      'department store': '["shop"="department_store"]',
+      'shopping centre': '["shop"="mall"]',
+      'shopping center': '["shop"="mall"]',
+      'mall': '["shop"="mall"]',
+      'wine shop': '["shop"="wine"]',
+      'sports shop': '["shop"="sports"]',
+      'furniture shop': '["shop"="furniture"]',
+      'stationery shop': '["shop"="stationery"]',
+
+      // --- food & drink ---
+      'fast food': '["amenity"="fast_food"]',
+      'takeaway': '["amenity"="fast_food"]',
+      'take away': '["amenity"="fast_food"]',
+      'bar': '["amenity"="bar"]',
+      'wine bar': '["amenity"="bar"]',
+      'food court': '["amenity"="food_court"]',
+      'bakery cafe': '["shop"="bakery"]',
+      'ice cream shop': '["amenity"="ice_cream"]',
+      'ice cream': '["amenity"="ice_cream"]',
+
+      // --- transport ---
+      'tube station': '["railway"="station"]["station"="subway"]',
+      'underground station': '["railway"="station"]["station"="subway"]',
+      'metro station': '["railway"="station"]["station"="subway"]',
+      'tram stop': '["railway"="tram_stop"]',
+      'airport': '["aeroway"="aerodrome"]',
+      'taxi rank': '["amenity"="taxi"]',
+      'car rental': '["amenity"="car_rental"]',
+      'car hire': '["amenity"="car_rental"]',
+      'bike rack': '["amenity"="bicycle_parking"]',
+      'bicycle parking': '["amenity"="bicycle_parking"]',
+      'ev charging': '["amenity"="charging_station"]',
+      'ev charger': '["amenity"="charging_station"]',
+      'electric car charging': '["amenity"="charging_station"]',
+      'charging point': '["amenity"="charging_station"]',
+      'car wash': '["shop"="car_wash"]',
+      'mechanic': '["shop"="car_repair"]',
+      'garage': '["shop"="car_repair"]',
+      'car repair': '["shop"="car_repair"]',
+      'mot centre': '["shop"="car_repair"]',
+      'tyre shop': '["shop"="tyres"]',
+      'car dealer': '["shop"="car"]',
+      'car dealership': '["shop"="car"]',
+
+      // --- health & services ---
+      'optometrist': '["shop"="optician"]',
+      'physiotherapist': '["amenity"="clinic"]["healthcare"="physiotherapist"]',
+      'physio': '["amenity"="clinic"]["healthcare"="physiotherapist"]',
+      'clinic': '["amenity"="clinic"]',
+      'urgent care': '["amenity"="clinic"]',
+      'a&e': '["amenity"="hospital"]',
+      'emergency room': '["amenity"="hospital"]',
+      'care home': '["amenity"="social_facility"]["social_facility"="nursing_home"]',
+      'nursing home': '["amenity"="social_facility"]["social_facility"="nursing_home"]',
+      'job centre': '["office"="employment_agency"]',
+      'jobcentre': '["office"="employment_agency"]',
+      'citizens advice': '["office"="charity"]',
+      'town hall': '["amenity"="townhall"]',
+      'council office': '["amenity"="townhall"]',
+      'police station': '["amenity"="police"]',
+      'fire station': '["amenity"="fire_station"]',
+      'courthouse': '["amenity"="courthouse"]',
+      'court': '["amenity"="courthouse"]',
+      'embassy': '["office"="diplomatic"]',
+      'solicitor': '["office"="lawyer"]',
+      'solicitors': '["office"="lawyer"]',
+      'lawyer': '["office"="lawyer"]',
+      'accountant': '["office"="accountant"]',
+      'estate agent': '["office"="estate_agent"]',
+      'estate agents': '["office"="estate_agent"]',
+      'letting agent': '["office"="estate_agent"]',
+
+      // --- finance ---
+      'building society': '["amenity"="bank"]',
+      'cashpoint': '["amenity"="atm"]',
+      'cash point': '["amenity"="atm"]',
+      'currency exchange': '["amenity"="bureau_de_change"]',
+      'bureau de change': '["amenity"="bureau_de_change"]',
+
+      // --- leisure & culture ---
+      'museum': '["tourism"="museum"]',
+      'art gallery': '["tourism"="gallery"]',
+      'gallery': '["tourism"="gallery"]',
+      'theatre': '["amenity"="theatre"]',
+      'theater': '["amenity"="theatre"]',
+      'sports centre': '["leisure"="sports_centre"]',
+      'sports center': '["leisure"="sports_centre"]',
+      'leisure center': '["leisure"="sports_centre"]',
+      'tennis court': '["leisure"="pitch"]["sport"="tennis"]',
+      'football pitch': '["leisure"="pitch"]["sport"="soccer"]',
+      'golf course': '["leisure"="golf_course"]',
+      'climbing wall': '["sport"="climbing"]',
+      'skate park': '["leisure"="pitch"]["sport"="skateboard"]',
+      'beach': '["natural"="beach"]',
+      'nature reserve': '["leisure"="nature_reserve"]',
+      'campsite': '["tourism"="camp_site"]',
+      'caravan park': '["tourism"="caravan_site"]',
+      'hotel': '["tourism"="hotel"]',
+      'hotels': '["tourism"="hotel"]',
+      'hostel': '["tourism"="hostel"]',
+      'bed and breakfast': '["tourism"="guest_house"]',
+      'b&b': '["tourism"="guest_house"]',
+      'zoo': '["tourism"="zoo"]',
+      'aquarium': '["tourism"="aquarium"]',
+      'bowling alley': '["leisure"="bowling_alley"]',
+      'nightclub': '["amenity"="nightclub"]',
+      'casino': '["amenity"="casino"]',
+
+      // --- education / places of worship ---
+      'nursery': '["amenity"="kindergarten"]',
+      'kindergarten': '["amenity"="kindergarten"]',
+      'preschool': '["amenity"="kindergarten"]',
+      'sixth form': '["amenity"="college"]',
+      'synagogue': '["amenity"="place_of_worship"]["religion"="jewish"]',
+      'temple': '["amenity"="place_of_worship"]["religion"="hindu"]',
+      'gurdwara': '["amenity"="place_of_worship"]["religion"="sikh"]',
+      'cemetery': '["landuse"="cemetery"]',
+      'graveyard': '["landuse"="cemetery"]',
+
+      // --- misc utility ---
+      'toilet': '["amenity"="toilets"]',
+      'toilets': '["amenity"="toilets"]',
+      'public toilet': '["amenity"="toilets"]',
+      'water fountain': '["amenity"="drinking_water"]',
+      'drinking water': '["amenity"="drinking_water"]',
+      'playgroup': '["leisure"="playground"]'
     };
 
     if(exactMap[q]) return [exactMap[q]];
 
-    // Partial matches against known category keys (e.g. "nearest college campus")
+    // Normalise for fuzzier matching: collapse whitespace, strip common
+    // filler/prefix words ("nearest", "my", "the", "a", "local", "near me"...)
+    // so e.g. "nearest pharmacy please" or "my local gp" still resolve.
+    const FILLER_WORDS = new Set([
+      'nearest','near','nearby','closest','find','search','my','me','the','a','an',
+      'local','please','around','here','some','any','good','best','that','is','open'
+    ]);
+    const stripFiller = (str) => str
+      .replace(/\bnear me\b/g, ' ')
+      .split(/\s+/)
+      .filter(w => w && !FILLER_WORDS.has(w))
+      .join(' ')
+      .trim();
+
+    const qStripped = stripFiller(q);
+    if(qStripped && exactMap[qStripped]) return [exactMap[qStripped]];
+
+    // Naive singular/plural fold: try with/without trailing 's'.
+    const tryVariants = (str) => {
+      const variants = new Set([str]);
+      if(str.endsWith('s')) variants.add(str.slice(0, -1));
+      else variants.add(str + 's');
+      return variants;
+    };
+    for(const variant of tryVariants(qStripped)){
+      if(exactMap[variant]) return [exactMap[variant]];
+    }
+
+    // Word-boundary matching against known category keys in both directions —
+    // e.g. "nearest college campus" matches key "college", and a query that's
+    // just "doctors surgery" matches key "gp surgery" style multi-word keys
+    // when every word of the (shorter) key appears in the query.
+    const queryWords = new Set(qStripped.split(/\s+/).filter(Boolean));
     const partial = [];
     for(const key in exactMap){
-      if(q.includes(key)) partial.push(exactMap[key]);
+      const keyWords = key.split(/\s+/);
+      const allKeyWordsPresent = keyWords.every(kw => queryWords.has(kw) ||
+        [...queryWords].some(qw => qw === kw + 's' || qw + 's' === kw));
+      if(allKeyWordsPresent){
+        partial.push(exactMap[key]);
+        continue;
+      }
+      // Fallback: substring match either direction (handles compound terms
+      // like "supermarkets nearby" or "find a pharmacy").
+      if(qStripped.includes(key) || (key.length > 3 && key.includes(qStripped) && qStripped.length > 3)){
+        partial.push(exactMap[key]);
+      }
     }
     if(partial.length) return [...new Set(partial)];
 
-    // No known category match — caller should use Nominatim instead.
+    // No known category match — caller should use Nominatim (and an
+    // Overpass name search) instead.
     return null;
   }
 
@@ -1173,6 +1401,68 @@
     } finally {
       if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
     }
+  }
+
+  // Escapes a string for safe use inside an Overpass QL regex literal.
+  function escapeOverpassRegex(str){
+    return str.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&');
+  }
+
+  // Free-text / brand-name search run directly against Overpass, matching
+  // the OSM "name" (and "brand") tags case-insensitively. This catches a lot
+  // of real places that Nominatim's geocoder index misses or ranks low —
+  // e.g. a specific shop branch that has no separate Nominatim entry — so
+  // it's run alongside Nominatim rather than instead of it.
+  async function searchOverpassByName(lat, lon, queryRaw, radiusMeters, externalSignal){
+    const term = escapeOverpassRegex(queryRaw.trim());
+    if(!term) return [];
+    const around = `(around:${radiusMeters},${lat},${lon})`;
+    const ql = `
+      [out:json][timeout:12];
+      (
+        nwr["name"~"${term}",i]${around};
+        nwr["brand"~"${term}",i]${around};
+        nwr["operator"~"${term}",i]${around};
+      );
+      out center 25;
+    `;
+
+    let lastError = null;
+    for(const mirror of OVERPASS_MIRRORS){
+      if(externalSignal && externalSignal.aborted){
+        throw new Error('CANCELLED');
+      }
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
+      const onExternalAbort = () => timeoutController.abort();
+      if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
+
+      try{
+        const res = await fetch(mirror, {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(ql),
+          signal: timeoutController.signal
+        });
+        clearTimeout(timeoutId);
+        if(!res.ok){ lastError = new Error(`OVERPASS_HTTP_${res.status}`); continue; }
+        let data;
+        try{ data = await res.json(); }
+        catch(parseErr){ lastError = new Error('OVERPASS_BAD_RESPONSE'); continue; }
+        return (data.elements || []).map(elementToPlace).filter(Boolean);
+      } catch(err){
+        clearTimeout(timeoutId);
+        if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+        lastError = err;
+        continue;
+      } finally {
+        if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+      }
+    }
+    // Name-search is a supplementary source — if every mirror fails, just
+    // return no extra results rather than failing the whole search, since
+    // Nominatim may still succeed.
+    console.warn('Overpass name-search unavailable:', lastError);
+    return [];
   }
 
   function buildNominatimAddress(addr){
@@ -1373,7 +1663,29 @@
       const elements = await searchOverpass(lat, lon, queryRaw, radiusMeters, signal);
       return elements.map(elementToPlace).filter(Boolean);
     } else {
-      return await searchNominatim(lat, lon, queryRaw, radiusMeters, signal);
+      // Run both sources in parallel: Nominatim's geocoder index, and a
+      // direct Overpass name/brand match. Either alone can miss real
+      // results, so combine and dedupe them for better recall.
+      const [nominatimResult, overpassNameResult] = await Promise.allSettled([
+        searchNominatim(lat, lon, queryRaw, radiusMeters, signal),
+        searchOverpassByName(lat, lon, queryRaw, radiusMeters, signal)
+      ]);
+
+      if(nominatimResult.status === 'rejected' && overpassNameResult.status === 'rejected'){
+        // Both failed — surface the Nominatim error (it's the primary source)
+        // unless it was a cancellation, in which case let that propagate.
+        const nomErr = nominatimResult.reason;
+        const ovErr = overpassNameResult.reason;
+        if(nomErr && nomErr.message === 'CANCELLED') throw nomErr;
+        if(ovErr && ovErr.message === 'CANCELLED') throw ovErr;
+        throw nomErr || ovErr;
+      }
+
+      const combined = [
+        ...(nominatimResult.status === 'fulfilled' ? nominatimResult.value : []),
+        ...(overpassNameResult.status === 'fulfilled' ? overpassNameResult.value : [])
+      ];
+      return combined;
     }
   }
 
@@ -1411,7 +1723,7 @@
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
       // Single search at a sensible radius first (one round-trip, not several).
-      // Only widen once, and only if the first attempt came back empty.
+      // Only widen if needed — up to two more, progressively larger, attempts.
       let places = await findPlaces(origin.lat, origin.lon, queryRaw, 8000, signal);
       let usedRadius = 8000;
 
@@ -1419,6 +1731,12 @@
         setStatus(`Nothing close by — widening the search…`, 'loading');
         places = await findPlaces(origin.lat, origin.lon, queryRaw, 30000, signal);
         usedRadius = 30000;
+      }
+
+      if(places.length === 0){
+        setStatus(`Still nothing — widening further…`, 'loading');
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 80000, signal);
+        usedRadius = 80000;
       }
 
       places = dedupeByLocation(places);
