@@ -1530,6 +1530,15 @@
     'name','is','there','near','postcode','code','find','locate','outlet','outlets'
   ]);
 
+  // Generic filler words (English) that should never be treated as part of
+  // a place's brand/name when extracting a name token from a free-text query.
+  // NOTE: this was previously referenced but never defined — a bug that
+  // silently broke the whole script (ReferenceError on every search attempt).
+  const FILLER_WORDS_GLOBAL = new Set([
+    'nearest','near','nearby','closest','find','search','my','me','the','a','an',
+    'local','please','around','here','some','any','good','best','that','is','open'
+  ]);
+
   // Pulls out token(s) that look like a brand/proper name (Latin letters
   // and digits, not a filler or generic category word) from a free-text
   // query. Returns null if nothing distinctive is found, in which case
@@ -1596,9 +1605,6 @@
     }
     return queryRaw;
   }
-    'nearest','near','nearby','closest','find','search','my','me','the','a','an',
-    'local','please','around','here','some','any','good','best','that','is','open'
-  ]);
 
   // Free-text / brand-name search run directly against Overpass, matching
   // the OSM "name" (and "brand") tags case-insensitively. This catches a lot
