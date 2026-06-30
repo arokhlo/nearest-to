@@ -1032,10 +1032,29 @@
       'hospital': '["amenity"="hospital"]',
       'post office': '["amenity"="post_office"]',
       'train station': '["railway"="station"]',
+      'train stations': '["railway"="station"]',
       'railway station': '["railway"="station"]',
+      'railway stations': '["railway"="station"]',
+      'rail station': '["railway"="station"]',
       'station': '["railway"="station"]',
+      'stations': '["railway"="station"]',
+      'railway': '["railway"="station"]',
+      'railways': '["railway"="station"]',
+      'rail': '["railway"="station"]',
+      'train': '["railway"="station"]',
+      'trains': '["railway"="station"]',
       'bus stop': '["highway"="bus_stop"]',
+      'bus stops': '["highway"="bus_stop"]',
       'bus station': '["amenity"="bus_station"]',
+      'bus stations': '["amenity"="bus_station"]',
+      'coach station': '["amenity"="bus_station"]',
+      'coach stations': '["amenity"="bus_station"]',
+      'coach stop': '["highway"="bus_stop"]',
+      'coach stops': '["highway"="bus_stop"]',
+      'bus': '["amenity"="bus_station"]',
+      'buses': '["amenity"="bus_station"]',
+      'coach': '["amenity"="bus_station"]',
+      'coaches': '["amenity"="bus_station"]',
       'college': '["amenity"="college"]',
       'university': '["amenity"="university"]',
       'school': '["amenity"="school"]',
@@ -1527,7 +1546,9 @@
     'doctor','doctors','dentist','dentists','hospital','hospitals','clinic','clinics',
     'bank','banks','school','schools','hotel','hotels','gym','gyms','salon','salons',
     'surgery','surgeries','centre','center','office','offices','branch','named','called',
-    'name','is','there','near','postcode','code','find','locate','outlet','outlets'
+    'name','is','there','near','postcode','code','find','locate','outlet','outlets',
+    'station','stations','railway','railways','rail','train','trains',
+    'bus','buses','coach','coaches','stop','stops'
   ]);
 
   // Generic filler words (English) that should never be treated as part of
@@ -1572,6 +1593,8 @@
     'بانک': 'bank', 'مدرسه': 'school', 'دانشگاه': 'university', 'پارک': 'park',
     'ایستگاه': 'station', 'اتوبوس': 'bus', 'دندانپزشک': 'dentist', 'کتابخانه': 'library',
     'پمپ بنزین': 'petrol station', 'باشگاه': 'gym', 'مسجد': 'mosque',
+    'ایستگاه قطار': 'railway station', 'قطار': 'railway station', 'راه آهن': 'railway station',
+    'ایستگاه اتوبوس': 'bus station',
     // English abbreviations / colloquial
     'gp': 'doctor surgery', 'a&e': 'hospital emergency', 'aldi': 'Aldi supermarket',
     'lidl': 'Lidl supermarket', 'tesco': 'Tesco supermarket', 'asda': 'Asda supermarket',
@@ -1587,7 +1610,23 @@
     'petrol station': 'petrol station fuel', 'petrol': 'petrol station fuel',
     'car park': 'parking', 'car wash': 'car wash', 'mot': 'MOT car repair garage',
     'leisure centre': 'sports centre leisure', 'swimming pool': 'swimming pool leisure',
-    'police': 'police station', 'fire station': 'fire station'
+    'police': 'police station', 'fire station': 'fire station',
+    // Railway / train — all near-synonyms point to the same OSM concept
+    // (railway=station), so "railway", "train", "railway station" and
+    // "train station" all return the same results.
+    'railway station': 'railway station', 'railway stations': 'railway station',
+    'train station': 'railway station', 'train stations': 'railway station',
+    'rail station': 'railway station', 'railway': 'railway station',
+    'railways': 'railway station', 'train': 'railway station', 'trains': 'railway station',
+    'rail': 'railway station',
+    // Bus / coach — treated as the same concept (a stop/station for
+    // road-based public transport), since OSM doesn't reliably distinguish
+    // a "coach station" from a "bus station".
+    'bus station': 'bus station', 'bus stations': 'bus station',
+    'coach station': 'bus station', 'coach stations': 'bus station',
+    'bus': 'bus station', 'buses': 'bus station', 'coach': 'bus station', 'coaches': 'bus station',
+    'bus stop': 'bus stop', 'bus stops': 'bus stop',
+    'coach stop': 'bus stop', 'coach stops': 'bus stop'
   };
 
   // Translates / expands a query using the synonym map before searching.
