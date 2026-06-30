@@ -844,7 +844,7 @@
         });
         if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
         return res.json();
-      }, null, 6000);
+      }, null, 4000);
     } catch(err){
       return null;
     }
@@ -1346,7 +1346,7 @@
     const url = `https://photon.komoot.io/api/?${params.toString()}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const onAbort = () => controller.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onAbort);
 
@@ -1443,7 +1443,7 @@
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
     const timeoutController = new AbortController();
-    const timeoutId = setTimeout(() => timeoutController.abort(), 6000);
+    const timeoutId = setTimeout(() => timeoutController.abort(), 4000);
     const onExternalAbort = () => timeoutController.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
 
@@ -1715,7 +1715,7 @@
         });
         if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
         return res.json();
-      }, externalSignal, 6000);
+      }, externalSignal, 4000);
 
       return (data.elements || []).map(elementToPlace).filter(Boolean);
     } catch(err){
@@ -1767,7 +1767,7 @@
       });
       if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
       return res.json();
-    }, externalSignal, 6000);
+    }, externalSignal, 4000);
 
     return (data.elements || []).map(elementToPlace).filter(Boolean);
   }
@@ -1835,15 +1835,17 @@
 
     const rows = withDist.map(p=>{
       const d = formatDistance(p.dist);
-      // Directions FROM the searched postcode TO this result, not just a pin on the map.
+      // Directions FROM the searched postcode TO this result, walking route
+      // (not just a pin on the map, and not driving directions).
       const directionsURL = `https://www.google.com/maps/dir/?api=1` +
         `&origin=${encodeURIComponent(origin.label)}` +
-        `&destination=${p.lat},${p.lon}`;
+        `&destination=${p.lat},${p.lon}` +
+        `&travelmode=walking`;
       // Google Maps pin for the place itself (clicking name opens place on map)
       const placePinURL = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`;
       const addrLine = p.address
-        ? `<a href="${directionsURL}" target="_blank" rel="noopener" title="Get directions from ${escapeHTML(origin.label)}">${escapeHTML(p.address)}&nbsp;↗</a>`
-        : `<a href="${directionsURL}" target="_blank" rel="noopener" title="Get directions">Get directions&nbsp;↗</a>`;
+        ? `<a href="${directionsURL}" target="_blank" rel="noopener" title="Walking directions from ${escapeHTML(origin.label)}">${escapeHTML(p.address)}&nbsp;↗</a>`
+        : `<a href="${directionsURL}" target="_blank" rel="noopener" title="Walking directions">Get walking directions&nbsp;↗</a>`;
       return `
         <li class="result">
           ${compassSVG(p.brg)}
@@ -1897,7 +1899,7 @@
       tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
     }
 
-    const settled = await raceWithGracePeriod(tasks, signal, 4000);
+    const settled = await raceWithGracePeriod(tasks, signal, 1500);
 
     const allFailed = settled.every(r => r.status === 'rejected');
     if(allFailed){
