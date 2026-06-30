@@ -1346,7 +1346,7 @@
     const url = `https://photon.komoot.io/api/?${params.toString()}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
     const onAbort = () => controller.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onAbort);
 
@@ -1443,7 +1443,7 @@
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
     const timeoutController = new AbortController();
-    const timeoutId = setTimeout(() => timeoutController.abort(), 4000);
+    const timeoutId = setTimeout(() => timeoutController.abort(), 3000);
     const onExternalAbort = () => timeoutController.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
 
@@ -1715,7 +1715,7 @@
         });
         if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
         return res.json();
-      }, externalSignal, 4000);
+      }, externalSignal, 3000);
 
       return (data.elements || []).map(elementToPlace).filter(Boolean);
     } catch(err){
@@ -1767,7 +1767,7 @@
       });
       if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
       return res.json();
-    }, externalSignal, 4000);
+    }, externalSignal, 3000);
 
     return (data.elements || []).map(elementToPlace).filter(Boolean);
   }
@@ -1884,8 +1884,10 @@
     // Nominatim: also run in parallel — gives good results for UK amenities
     // and catches things Photon might miss.
     const nameToken = extractNameToken(queryRaw);
-    const nominatimQueries = nameToken ? [queryRaw, nameToken] : [queryRaw];
-    tasks.push(...nominatimQueries.map(q => searchNominatim(lat, lon, q, radiusMeters, signal)));
+    // Only the original query is sent to Nominatim — the extracted name
+    // token is still searched via Overpass-by-name below, so we get the
+    // same coverage with half the Nominatim requests (faster + less load).
+    tasks.push(searchNominatim(lat, lon, queryRaw, radiusMeters, signal));
 
     // Overpass structured category query — only when a known OSM tag matches,
     // since it is the most reliable for e.g. "all pharmacies nearby".
@@ -1899,7 +1901,7 @@
       tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
     }
 
-    const settled = await raceWithGracePeriod(tasks, signal, 1500);
+    const settled = await raceWithGracePeriod(tasks, signal, 900);
 
     const allFailed = settled.every(r => r.status === 'rejected');
     if(allFailed){
