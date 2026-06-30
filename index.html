@@ -1346,7 +1346,7 @@
     const url = `https://photon.komoot.io/api/?${params.toString()}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
     const onAbort = () => controller.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onAbort);
 
@@ -1443,7 +1443,7 @@
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
     const timeoutController = new AbortController();
-    const timeoutId = setTimeout(() => timeoutController.abort(), 9000);
+    const timeoutId = setTimeout(() => timeoutController.abort(), 6000);
     const onExternalAbort = () => timeoutController.abort();
     if(externalSignal) externalSignal.addEventListener('abort', onExternalAbort);
 
@@ -1631,18 +1631,53 @@
 
   // Translates / expands a query using the synonym map before searching.
   // Returns the expanded query string (may be the same as input).
+  //
+  // Rewritten to match whole words/phrases only (word-boundary aware),
+  // not raw substrings — the old version used `lower.includes(key)`,
+  // which could wrongly match a short key (e.g. "gym", "rail") *inside*
+  // an unrelated longer word (e.g. "gymnastics", "trailer"), and could
+  // only ever apply one synonym per query. This version:
+  //   1) checks for an exact whole-query match first (fast path),
+  //   2) otherwise scans known phrases longest-first so multi-word
+  //      synonyms (e.g. "railway station") are matched before shorter
+  //      ones (e.g. "railway") that are substrings of them,
+  //   3) replaces *every* matching whole word/phrase found in the query
+  //      (so "bus or train" correctly expands both terms), using regex
+  //      word boundaries so partial-word matches are never made.
+  const SYNONYM_KEYS_BY_LENGTH = Object.keys(SYNONYM_MAP).sort((a, b) => b.length - a.length);
+
   function expandQuery(queryRaw){
-    const lower = queryRaw.trim().toLowerCase();
+    const trimmed = queryRaw.trim();
+    const lower = trimmed.toLowerCase();
     if(SYNONYM_MAP[lower]) return SYNONYM_MAP[lower];
-    // Try partial matches — if the query starts with or contains a known synonym key
-    for(const [key, val] of Object.entries(SYNONYM_MAP)){
-      if(key.length > 2 && lower.includes(key)){
-        // Append the expansion alongside the original so both are searched
-        const remainder = lower.replace(key, '').trim();
-        return remainder ? `${val} ${remainder}` : val;
+
+    let result = trimmed;
+    const replacedSpans = []; // [start, end] ranges already matched, to avoid overlap
+
+    for(const key of SYNONYM_KEYS_BY_LENGTH){
+      if(key.length <= 2) continue; // skip ultra-short keys entirely (too ambiguous)
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(^|\\s)(${escapedKey})(?=\\s|$)`, 'gi');
+      let match;
+      while((match = re.exec(result)) !== null){
+        const start = match.index + match[1].length;
+        const end = start + match[2].length;
+        const overlaps = replacedSpans.some(([s, e]) => start < e && end > s);
+        if(!overlaps) replacedSpans.push([start, end]);
       }
     }
-    return queryRaw;
+
+    if(!replacedSpans.length) return trimmed;
+
+    // Apply replacements right-to-left so earlier indices stay valid.
+    replacedSpans.sort((a, b) => b[0] - a[0]);
+    for(const [start, end] of replacedSpans){
+      const original = result.slice(start, end);
+      const val = SYNONYM_MAP[original.toLowerCase()];
+      if(val) result = result.slice(0, start) + val + result.slice(end);
+    }
+
+    return result.trim();
   }
 
   // Free-text / brand-name search run directly against Overpass, matching
@@ -1680,7 +1715,7 @@
         });
         if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
         return res.json();
-      }, externalSignal, 9000);
+      }, externalSignal, 6000);
 
       return (data.elements || []).map(elementToPlace).filter(Boolean);
     } catch(err){
@@ -1732,7 +1767,7 @@
       });
       if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
       return res.json();
-    }, externalSignal, 9000);
+    }, externalSignal, 6000);
 
     return (data.elements || []).map(elementToPlace).filter(Boolean);
   }
@@ -1862,7 +1897,7 @@
       tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
     }
 
-    const settled = await Promise.allSettled(tasks);
+    const settled = await raceWithGracePeriod(tasks, signal, 4000);
 
     const allFailed = settled.every(r => r.status === 'rejected');
     if(allFailed){
@@ -1875,6 +1910,54 @@
       if(r.status === 'fulfilled') combined.push(...r.value);
     }
     return combined;
+  }
+
+  // Runs every task to completion like Promise.allSettled, but bounds the
+  // *total* wait once the first task finishes: any task still pending after
+  // `graceMs` more milliseconds is treated as "not yet resolved" (rejected
+  // with TIMED_OUT) so the caller isn't stuck waiting on the single slowest
+  // source (typically Overpass) when faster sources (Photon/Nominatim)
+  // already returned. This is the main fix for the "search is very slow"
+  // problem — previously the whole search waited for every source no
+  // matter how long the slowest one took.
+  async function raceWithGracePeriod(tasks, externalSignal, graceMs){
+    if(!tasks.length) return [];
+    let firstSettledAt = null;
+    let graceTimer = null;
+    let finished = false;
+
+    return new Promise(resolve => {
+      const results = new Array(tasks.length);
+      let remaining = tasks.length;
+
+      const finishUp = () => {
+        if(finished) return;
+        finished = true;
+        if(graceTimer) clearTimeout(graceTimer);
+        for(let i = 0; i < results.length; i++){
+          if(results[i] === undefined) results[i] = { status: 'rejected', reason: new Error('TIMED_OUT') };
+        }
+        resolve(results);
+      };
+
+      tasks.forEach((task, i) => {
+        task.then(
+          value => { results[i] = { status: 'fulfilled', value }; },
+          reason => { results[i] = { status: 'rejected', reason }; }
+        ).finally(() => {
+          remaining--;
+          if(firstSettledAt === null){
+            firstSettledAt = Date.now();
+            graceTimer = setTimeout(finishUp, graceMs);
+          }
+          if(remaining === 0) finishUp();
+        });
+      });
+
+      if(externalSignal){
+        externalSignal.addEventListener('abort', finishUp, { once: true });
+      }
+    });
   }
 
   async function doSearch(){
