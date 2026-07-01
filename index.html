@@ -560,6 +560,7 @@
       <button class="chip" data-query="supermarket">Supermarket</button>
       <button class="chip" data-query="foodstore">Foodstore</button>
       <button class="chip" data-query="asian shop">Asian shops</button>
+      <button class="chip" data-query="charity">Charities</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
@@ -1057,8 +1058,27 @@
       filters: ['["shop"="butcher"]'], terms: ['butcher','butchers']
     },
     {
-      id: 'charity-shop', label: 'charity shops', aliases: ['charity shop','charity shops','thrift shop'],
-      filters: ['["shop"="charity"]'], terms: ['charity shop']
+      id: 'charity-community',
+      label: 'charities, community organisations and support centres',
+      aliases: [
+        'charity','charities','charity organisation','charity organisations','charitable organisation','charitable organisations',
+        'charity shop','charity shops','thrift shop','voluntary organisation','voluntary organisations','community organisation','community organisations',
+        'community group','community groups','support charity','support centre','resource centre','disability charity','disability support',
+        'refugee charity','asylum charity','sanctuary charity','kind communities','pukar','pukar disability resource centre'
+      ],
+      filters: [
+        '["shop"="charity"]',
+        '["office"~"charity|ngo|association|foundation",i]',
+        '["amenity"="community_centre"]',
+        '["amenity"="social_facility"]',
+        '["social_facility"]',
+        '["community_centre"]'
+      ],
+      terms: [
+        'charity','charities','charity organisation','community organisation','community centre','support centre','resource centre',
+        'disability support','refugee support','asylum support','voluntary organisation','Kind Communities','Pukar Disability Resource Centre'
+      ],
+      nameTerms: ['Pukar','PUKAR','Kind Communities','Kind','Disability Resource Centre','Resource Centre','Sanctuary','Refugee','Asylum','Community','Communities','Support','Preston City of Sanctuary']
     },
     {
       id: 'clothes', label: 'clothes shops', aliases: ['clothes shop','clothing store','fashion shop','clothes'],
@@ -1148,7 +1168,9 @@
     'cafe':['["amenity"="cafe"]'], 'coffee shop':['["amenity"="cafe"]'],
     'pub':['["amenity"="pub"]'], 'bank':['["amenity"="bank"]'],
     'church':['["amenity"="place_of_worship"]','["building"="church"]'],
-    'mosque':['["amenity"="place_of_worship"]["religion"="muslim"]','["building"="mosque"]']
+    'mosque':['["amenity"="place_of_worship"]["religion"="muslim"]','["building"="mosque"]'],
+    'charity':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]'],
+    'charities':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]']
   };
 
 
@@ -1169,6 +1191,20 @@
       postcode: 'PR1 6RX',
       category: 'asian food shop',
       keywords: ['emaan','eman','imaan','superstore','asia','asian','foodstore','food store','supermarket','shop','grocery','halal','international food']
+    },
+    {
+      name: 'Pukar Disability Resource Centre',
+      address: '3/5 Oakham Court, Avenham Lane, Preston PR1 3XP',
+      postcode: 'PR1 3XP',
+      category: 'charity / disability support',
+      keywords: ['pukar','disability','resource centre','resource','centre','charity','charities','community organisation','support centre','support','voluntary organisation','preston']
+    },
+    {
+      name: 'Kind Communities',
+      address: 'Suite 10, 80 Lytham Road, Preston PR2 3AH',
+      postcode: 'PR2 3AH',
+      category: 'charity / community organisation',
+      keywords: ['kind','kind communities','communities','charity','charities','community organisation','community','support','voluntary organisation','preston']
     }
   ];
 
@@ -1267,7 +1303,7 @@
       terms: [...new Set([queryRaw.trim(), ...matches.flatMap(m => m.terms)])].slice(0, 24),
       nameTerms: [...new Set(matches.flatMap(m => m.nameTerms || []))],
       recognised: true,
-      resultLimit: matches.some(m => m.id === 'general-retail') ? 200 : 100
+      resultLimit: matches.some(m => m.id === 'general-retail') ? 200 : (matches.some(m => m.id === 'charity-community') ? 150 : 100)
     };
   }
 
@@ -1448,7 +1484,9 @@
     'surgery','surgeries','centre','center','office','offices','branch','named','called',
     'name','is','there','near','postcode','code','find','locate','outlet','outlets',
     'station','stations','railway','railways','rail','train','trains',
-    'bus','buses','coach','coaches','stop','stops'
+    'bus','buses','coach','coaches','stop','stops',
+    'charity','charities','community','communities','organisation','organisations','organization','organizations',
+    'resource','centre','center','support','disability','voluntary'
   ]);
 
   const FILLER_WORDS_GLOBAL = new Set([
