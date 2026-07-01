@@ -563,6 +563,7 @@
       <button class="chip" data-query="GP surgery">GP surgery</button>
       <button class="chip" data-query="post office">Post office</button>
       <button class="chip" data-query="bus stop">Bus stop</button>
+      <button class="chip" data-query="qibla-direction">Qibla direction</button>
     </div>
 
     <p class="hint">Type any kind of place — <b>shop name, service, or amenity</b> — and a postcode. Results are pulled live from OpenStreetMap and sorted by straight-line distance.</p>
@@ -1092,6 +1093,26 @@
       filters: ['["amenity"="post_office"]'], terms: ['post office']
     },
     {
+      id: 'place-of-worship',
+      label: 'churches, mosques and places of worship',
+      aliases: ['church','churches','emmanuel church','preston city church','city church','place of worship','places of worship','mosque','mosques','masjid','chapel','prayer room','prayer space'],
+      filters: [
+        '["amenity"="place_of_worship"]',
+        '["building"="church"]',
+        '["building"="chapel"]',
+        '["building"="mosque"]',
+        '["religion"]'
+      ],
+      terms: ['church','churches','Emmanuel Church Preston','Preston City Church','City Church Preston','place of worship','mosque','masjid','chapel','prayer room']
+    },
+    {
+      id: 'qibla',
+      label: 'qibla direction',
+      aliases: ['qibla','qibla direction','qibla-direction','qibla-direction','kibla','kaaba direction','makkah direction','mecca direction'],
+      filters: [],
+      terms: ['qibla direction']
+    },
+    {
       id: 'fuel', label: 'petrol stations', aliases: ['petrol station','fuel station','petrol','garage'],
       filters: ['["amenity"="fuel"]'], terms: ['petrol station','fuel station']
     },
@@ -1107,7 +1128,9 @@
     'park':['["leisure"="park"]'], 'gym':['["leisure"="fitness_centre"]','["leisure"="sports_centre"]'],
     'cinema':['["amenity"="cinema"]'], 'restaurant':['["amenity"="restaurant"]'],
     'cafe':['["amenity"="cafe"]'], 'coffee shop':['["amenity"="cafe"]'],
-    'pub':['["amenity"="pub"]'], 'bank':['["amenity"="bank"]']
+    'pub':['["amenity"="pub"]'], 'bank':['["amenity"="bank"]'],
+    'church':['["amenity"="place_of_worship"]','["building"="church"]'],
+    'mosque':['["amenity"="place_of_worship"]["religion"="muslim"]','["building"="mosque"]']
   };
 
   function normaliseIntentText(value){
@@ -1483,6 +1506,47 @@
     });
   }
 
+  function isQiblaQuery(queryRaw){
+    const text = normaliseIntentText(queryRaw).replace(/-/g, ' ');
+    return ['qibla','qibla direction','kibla','kaaba direction','makkah direction','mecca direction'].includes(text);
+  }
+
+  function qiblaBearingDegrees(lat, lon){
+    const kaabaLat = 21.422487;
+    const kaabaLon = 39.826206;
+    const toRad = d => d * Math.PI / 180;
+    const toDeg = r => r * 180 / Math.PI;
+    const phi1 = toRad(lat);
+    const phi2 = toRad(kaabaLat);
+    const deltaLon = toRad(kaabaLon - lon);
+    const y = Math.sin(deltaLon);
+    const x = Math.cos(phi1) * Math.tan(phi2) - Math.sin(phi1) * Math.cos(deltaLon);
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  }
+
+  function renderQiblaDirection(origin){
+    const brg = qiblaBearingDegrees(origin.lat, origin.lon);
+    const label = bearingToCompassLabel(brg);
+    resultsArea.innerHTML = `
+      <div class="ledger-head">
+        <h2>Qibla direction</h2>
+        <span class="origin">from <b>${escapeHTML(origin.label)}</b></span>
+      </div>
+      <ul class="results">
+        <li class="result">
+          ${compassSVG(brg)}
+          <div class="result-main">
+            <p class="name">Qibla direction towards the Kaaba</p>
+            <p class="addr">Face approximately <b>${Math.round(brg)}°</b> from north (${escapeHTML(label)}). This is a straight-line compass bearing, not a route.</p>
+          </div>
+          <div class="result-meta">
+            <span class="dist">${Math.round(brg)}<small>°</small></span>
+            <span class="bearing">${escapeHTML(label)}</span>
+          </div>
+        </li>
+      </ul>`;
+  }
+
   function renderResults(origin, places, queryRaw, queryExpanded){
     const intent = analyseIntent(queryRaw);
     if(!places.length){
@@ -1675,6 +1739,13 @@
 
     try{
       const origin = await geocodePostcode(postcodeRaw, signal);
+
+      if(isQiblaQuery(queryRaw)){
+        renderQiblaDirection(origin);
+        setStatus(`Qibla direction calculated from ${origin.label}.`, '');
+        return;
+      }
+
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
       let places = await findPlaces(origin.lat, origin.lon, queryRaw, 5000, signal);
