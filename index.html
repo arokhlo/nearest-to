@@ -561,6 +561,7 @@
       <button class="chip" data-query="foodstore">Foodstore</button>
       <button class="chip" data-query="asian shop">Asian shops</button>
       <button class="chip" data-query="charity">Charities</button>
+      <button class="chip" data-query="Community Gateway">Community Gateway</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
@@ -1064,7 +1065,8 @@
         'charity','charities','charity organisation','charity organisations','charitable organisation','charitable organisations',
         'charity shop','charity shops','thrift shop','voluntary organisation','voluntary organisations','community organisation','community organisations',
         'community group','community groups','support charity','support centre','resource centre','disability charity','disability support',
-        'refugee charity','asylum charity','sanctuary charity','kind communities','pukar','pukar disability resource centre'
+        'refugee charity','asylum charity','sanctuary charity','kind communities','pukar','pukar disability resource centre',
+        'gateway','community gateway','community gateway association','housing association','housing support','social housing','tenant support'
       ],
       filters: [
         '["shop"="charity"]',
@@ -1072,13 +1074,15 @@
         '["amenity"="community_centre"]',
         '["amenity"="social_facility"]',
         '["social_facility"]',
-        '["community_centre"]'
+        '["community_centre"]',
+        '["office"~"charity|ngo|association|foundation|company|administrative",i]',
+        '["operator"~"Community Gateway|Gateway",i]'
       ],
       terms: [
         'charity','charities','charity organisation','community organisation','community centre','support centre','resource centre',
-        'disability support','refugee support','asylum support','voluntary organisation','Kind Communities','Pukar Disability Resource Centre'
+        'disability support','refugee support','asylum support','voluntary organisation','housing association','housing support','tenant support','Community Gateway Association','Community Gateway','Gateway','Kind Communities','Pukar Disability Resource Centre'
       ],
-      nameTerms: ['Pukar','PUKAR','Kind Communities','Kind','Disability Resource Centre','Resource Centre','Sanctuary','Refugee','Asylum','Community','Communities','Support','Preston City of Sanctuary']
+      nameTerms: ['Pukar','PUKAR','Kind Communities','Kind','Community Gateway Association','Community Gateway','Gateway','Housing Association','Tenant Support','Disability Resource Centre','Resource Centre','Sanctuary','Refugee','Asylum','Community','Communities','Support','Preston City of Sanctuary']
     },
     {
       id: 'clothes', label: 'clothes shops', aliases: ['clothes shop','clothing store','fashion shop','clothes'],
@@ -1205,6 +1209,13 @@
       postcode: 'PR2 3AH',
       category: 'charity / community organisation',
       keywords: ['kind','kind communities','communities','charity','charities','community organisation','community','support','voluntary organisation','preston']
+    },
+    {
+      name: 'Community Gateway Association',
+      address: 'The Hub at St Bernards, Elswick Road, Ashton-on-Ribble, Preston PR2 1NT',
+      postcode: 'PR2 1NT',
+      category: 'housing association / community support',
+      keywords: ['community gateway association','community gateway','gateway','housing association','housing','tenant support','community organisation','community','support','charity','charities','voluntary organisation','ashton-on-ribble','preston']
     }
   ];
 
