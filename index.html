@@ -564,6 +564,8 @@
       <button class="chip" data-query="Community Gateway">Community Gateway</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
+      <button class="chip" data-query="rail station">Rail station</button>
+      <button class="chip" data-query="Barking Station">Barking Station</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
       <button class="chip" data-query="post office">Post office</button>
       <button class="chip" data-query="bus stop">Bus stop</button>
@@ -1123,8 +1125,19 @@
       filters: ['["amenity"="dentist"]','["healthcare"="dentist"]'], terms: ['dentist','dental clinic']
     },
     {
-      id: 'transport-train', label: 'railway stations', aliases: ['train station','train stations','railway station','rail station'],
-      filters: ['["railway"="station"]','["public_transport"="station"]["train"="yes"]'], terms: ['train station','railway station']
+      id: 'transport-train',
+      label: 'railway stations',
+      aliases: [
+        'train station','train stations','railway station','railway stations','rail station','rail stations',
+        'station','stations','national rail','national rail station','overground station','underground station','tube station'
+      ],
+      filters: [
+        '["railway"~"station|halt",i]',
+        '["public_transport"="station"]',
+        '["station"~"train|rail|subway|light_rail",i]',
+        '["railway"="subway_entrance"]'
+      ],
+      terms: ['train station','railway station','rail station','National Rail station','Overground station','Underground station','Tube station']
     },
     {
       id: 'transport-bus', label: 'bus stops and stations', aliases: ['bus stop','bus stops','bus station','coach station'],
@@ -1174,7 +1187,9 @@
     'church':['["amenity"="place_of_worship"]','["building"="church"]'],
     'mosque':['["amenity"="place_of_worship"]["religion"="muslim"]','["building"="mosque"]'],
     'charity':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]'],
-    'charities':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]']
+    'charities':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]'],
+    'station':['["railway"~"station|halt",i]','["public_transport"="station"]'],
+    'rail station':['["railway"~"station|halt",i]','["public_transport"="station"]']
   };
 
 
@@ -1216,6 +1231,13 @@
       postcode: 'PR2 1NT',
       category: 'housing association / community support',
       keywords: ['community gateway association','community gateway','gateway','housing association','housing','tenant support','community organisation','community','support','charity','charities','voluntary organisation','ashton-on-ribble','preston']
+    },
+    {
+      name: 'Barking Station',
+      address: 'Station Parade, Barking IG11 8TU',
+      postcode: 'IG11 8TU',
+      category: 'railway station',
+      keywords: ['barking station','barking','train station','rail station','railway station','station','national rail','overground station','underground station','tube station','transport']
     }
   ];
 
