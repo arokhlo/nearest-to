@@ -560,6 +560,8 @@
       <button class="chip" data-query="supermarket">Supermarket</button>
       <button class="chip" data-query="foodstore">Foodstore</button>
       <button class="chip" data-query="asian shop">Asian shops</button>
+      <button class="chip" data-query="halal food shop">Halal food</button>
+      <button class="chip" data-query="international food shop">International food</button>
       <button class="chip" data-query="charity">Charities</button>
       <button class="chip" data-query="Community Gateway">Community Gateway</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
@@ -1039,18 +1041,18 @@
         '["amenity"="marketplace"]'
       ],
       terms: ['supermarket','grocery shop','foodstore','food store','corner shop','convenience store','mini market','newsagent','greengrocer','halal food shop','Asian food shop'],
-      nameTerms: ['Foodstore','Food Store','Superstore','Continental','Emaan','Asia','Asian','Halal','World Foods','International Foods']
+      nameTerms: ['Foodstore','Food Store','Superstore','Continental','Emaan','Asia','Asian','Halal','World Foods','International Foods','Istanbul','Barkat','Kashmir','Kashmiri','Keshmiri','Watan','Miad','Miaad','Miad Food','Istanbul Supermarket','Barkat Foodstore','Kashmir Watan']
     },
     {
       id: 'asian-food',
       label: 'Asian and international food shops',
-      aliases: ['asia','asian','asian shop','asian shops','asian supermarket','asian food','asian food shop','asian foodstore','asian grocery','asian groceries','asian store','continental','continental food','international food','world food','halal','halal shop','halal food shop','pakistani shop','indian shop','middle eastern shop'],
+      aliases: ['asia','asian','asian shop','asian shops','asian supermarket','asian food','asian food shop','asian foodstore','asian grocery','asian groceries','asian store','continental','continental food','international food','international food shop','world food','world foods','halal','halal shop','halal food shop','pakistani shop','indian shop','turkish shop','turkish supermarket','middle eastern shop','kashmiri shop','kashmir shop','keshmiri shop'],
       filters: [
         '["shop"~"supermarket|convenience|general|greengrocer|deli|food|beverages|spices|rice|butcher",i]',
         '["cuisine"~"asian|indian|pakistani|bangladeshi|middle_eastern|halal",i]'
       ],
-      terms: ['Asia','Asian','Asian food shop','Asian supermarket','continental food shop','halal food shop','international food shop','world foods','Emaan Superstore','Asia Continental'],
-      nameTerms: ['Asia','Asian','Continental','Emaan','Eman','Iman','Halal','Pakistani','Indian','Bangla','Afghan','Middle East','World Foods','International Foods','Superstore']
+      terms: ['Asia','Asian','Asian food shop','Asian supermarket','continental food shop','halal food shop','international food shop','world foods','Turkish supermarket','Pakistani food shop','Indian food shop','Kashmiri food shop','Middle Eastern food shop','Emaan Superstore','Asia Continental','Istanbul Supermarket Preston','Barkat Foodstore Preston','Kashmir Watan Food Stores','Miad Preston'],
+      nameTerms: ['Asia','Asian','Continental','Emaan','Eman','Iman','Istanbul','Barkat','Kashmir','Kashmiri','Keshmiri','Watan','Miad','Miaad','Halal','Pakistani','Indian','Turkish','Bangla','Afghan','Middle East','World Foods','International Foods','Superstore','Foodstore']
     },
     {
       id: 'bakery', label: 'bakeries', aliases: ['bakery','baker','bakers'],
@@ -1210,6 +1212,34 @@
       postcode: 'PR1 6RX',
       category: 'asian food shop',
       keywords: ['emaan','eman','imaan','superstore','asia','asian','foodstore','food store','supermarket','shop','grocery','halal','international food']
+    },
+    {
+      name: 'Istanbul Supermarket Preston',
+      address: '47-49 New Hall Lane, Preston PR1 5NY',
+      postcode: 'PR1 5NY',
+      category: 'Turkish / international food shop',
+      keywords: ['istanbul','istanbul supermarket','turkish','turkish supermarket','asia','asian','foodstore','food store','supermarket','shop','grocery','halal','international food','middle eastern food','preston']
+    },
+    {
+      name: 'Barkat Foodstore Preston Ltd',
+      address: '1-2 Canute Street, Preston PR1 1PL',
+      postcode: 'PR1 1PL',
+      category: 'Asian / halal foodstore',
+      keywords: ['barkat','barkat foodstore','foodstore','food store','asia','asian','supermarket','shop','grocery','halal','international food','preston']
+    },
+    {
+      name: 'Kashmir Watan Food Stores',
+      address: 'Preston',
+      postcode: 'PR1 1PL',
+      category: 'Asian / Kashmiri food shop',
+      keywords: ['kashmir','kashmiri','keshmiri','watan','kashmir watan','food stores','foodstore','food store','asia','asian','supermarket','shop','grocery','halal','international food','preston']
+    },
+    {
+      name: 'Miad Food Store',
+      address: 'Preston',
+      postcode: 'PR1 1PL',
+      category: 'Asian / international food shop',
+      keywords: ['miad','miaad','miad preston','foodstore','food store','asia','asian','supermarket','shop','grocery','halal','international food','preston']
     },
     {
       name: 'Pukar Disability Resource Centre',
