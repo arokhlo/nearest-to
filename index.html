@@ -6,7 +6,7 @@
 <title>Nearest To — find anything near a UK postcode</title>
 <style>
 
-  @import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght=500;600;700;800&family=Inter:wght=400;500;600;700&display=swap');
 
   :root{
     --ink:#2B2B2B;
@@ -41,7 +41,6 @@
     margin: 0 auto;
   }
 
-  /* ---------- Header: sorting-office stamp ---------- */
   header{
     display:flex;
     align-items:flex-start;
@@ -113,7 +112,6 @@
     margin-top:4px;
   }
 
-  /* ---------- Search panel ---------- */
   .panel{
     background:var(--paper-raised);
     border:1px solid var(--hairline);
@@ -346,7 +344,6 @@
   }
   .hint b{ color:var(--ink); }
 
-  /* ---------- Status / messages ---------- */
   #status{
     min-height: 20px;
     font-size:14px;
@@ -355,13 +352,7 @@
     padding-left:2px;
   }
   #status.error{ color: var(--postbox-red); font-weight:600; }
-  #status.loading::after{
-    content:"";
-    display:inline-block;
-    width:10px;
-  }
 
-  /* ---------- Results: gazetteer ledger ---------- */
   .ledger-head{
     display:flex;
     justify-content:space-between;
@@ -498,7 +489,6 @@
     letter-spacing:0.4px;
   }
 
-  /* ---------- Empty / error states ---------- */
   .empty-state{
     text-align:center;
     padding:48px 20px;
@@ -566,11 +556,10 @@
     </div>
 
     <div class="quick-chips">
+      <button class="chip" data-query="shop">Shops</button>
       <button class="chip" data-query="supermarket">Supermarket</button>
-      <button class="chip" data-query="Aldi">Aldi</button>
+      <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
-      <button class="chip" data-query="college">College</button>
-      <button class="chip" data-query="pharmacy">Pharmacy</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
       <button class="chip" data-query="post office">Post office</button>
       <button class="chip" data-query="bus stop">Bus stop</button>
@@ -621,13 +610,11 @@
   const resultsArea = document.getElementById('resultsArea');
   const chips = document.querySelectorAll('.chip');
 
-  // Tracks the controller for whichever request is currently in flight,
-  // so the Stop button can cancel it immediately.
   let activeController = null;
   let searchCancelled = false;
   let lastResolvedAddress = '';
   let locationRequestId = 0;
-  let lastLocationCoords = null; // { lat, lon } from GPS
+  let lastLocationCoords = null; 
 
   chips.forEach(chip=>{
     chip.addEventListener('click', ()=>{
@@ -714,7 +701,6 @@
       res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal });
     } catch(networkErr){
       if(networkErr.name === 'AbortError') throw networkErr;
-      console.error('Postcode lookup network error:', networkErr);
       const e = new Error('POSTCODE_NETWORK');
       e.detail = networkErr.message;
       throw e;
@@ -729,7 +715,6 @@
     return { lat: data.result.latitude, lon: data.result.longitude, label: data.result.postcode };
   }
 
-  // Reverse-geocode GPS coordinates to the nearest UK postcode via postcodes.io.
   async function reverseGeocodeToPostcode(lat, lon){
     let res;
     try{
@@ -749,12 +734,6 @@
     return data.result[0].postcode;
   }
 
-  // Reverse-geocode GPS coordinates to structured address components via
-  // Nominatim (OpenStreetMap) — the same service already used elsewhere in
-  // this app for free-text place search. We return the structured address
-  // object (not Nominatim's display_name) because Nominatim's own postcode
-  // guess can disagree with the verified one from postcodes.io — the
-  // caller builds the final address line using the verified postcode.
   async function reverseGeocodeToAddress(lat, lon){
     const params = new URLSearchParams({
       lat: String(lat),
@@ -790,18 +769,6 @@
     return { name: data.name || null, address: data.address };
   }
 
-  // Builds a short, precise address line, always using the verified
-  // postcode (from postcodes.io) rather than Nominatim's own postcode
-  // guess, so the postcode shown here always matches the one filled into
-  // the Postcode box.
-  //
-  // Precision: if a specific named place is known (a building, office,
-  // shop, etc.) that's included. The house number + street is taken from
-  // `housePoint` when available — a dedicated OSM address-point lookup
-  // matched to the exact GPS coordinate — since Nominatim's own reverse
-  // geocode sometimes only resolves to the nearest road and omits the
-  // house number. Nominatim's own house_number/road is used as a fallback
-  // when no closer address point was found.
   function buildCurrentAddressLine(result, housePoint, verifiedPostcode){
     const addr = (result && result.address) || {};
 
@@ -827,10 +794,6 @@
     return parts.filter(Boolean).join(', ');
   }
 
-  // Searches nearby OSM address points (nodes/ways tagged with a house
-  // number) and returns the one closest to the exact GPS coordinate.
-  // Tries a radius based on the device's reported GPS accuracy first,
-  // then a wider radius if nothing turned up.
   async function findNearestHouseNumber(lat, lon, accuracyMeters){
     const baseRadius = Math.min(300, Math.max(40, Math.round((accuracyMeters || 50) * 1.5)));
     const radii = [baseRadius, Math.min(400, baseRadius * 2)];
@@ -840,7 +803,7 @@
         const found = await queryNearestAddressPoint(lat, lon, radius);
         if(found) return found;
       } catch(err){
-        console.warn('House-number lookup failed at radius', radius, err);
+        console.warn('House-number lookup failed', radius, err);
       }
     }
     return null;
@@ -873,7 +836,7 @@
     }
 
     const elements = data.elements || [];
-    if(!elements.length) return null; // nothing within this radius — let caller try wider
+    if(!elements.length) return null;
 
     let nearest = null;
     let nearestDist = Infinity;
@@ -894,14 +857,10 @@
     };
   }
 
-  // Background refinement: once the quick address is already on screen,
-  // try to pin down the exact house number via OSM address points and
-  // swap it in if found. Guarded against a newer location request having
-  // started in the meantime.
   async function refineAddressWithHouseNumber(lat, lon, accuracyMeters, addressResult, verifiedPostcode, requestId){
     const housePoint = await findNearestHouseNumber(lat, lon, accuracyMeters);
     if(!housePoint) return;
-    if(requestId !== locationRequestId) return; // a newer request has since started
+    if(requestId !== locationRequestId) return; 
 
     const line = buildCurrentAddressLine(addressResult, housePoint, verifiedPostcode);
     if(line && lastLocationCoords){
@@ -913,12 +872,6 @@
     }
   }
 
-  // Reads the device's current location (with the user's permission) and
-  // fills the postcode field with the nearest UK postcode, as a default
-  // starting point the user can still edit before searching. Also shows
-  // a short address line underneath — built from Nominatim's street-level
-  // detail but always carrying the SAME verified postcode that was put in
-  // the box, so the two can never disagree.
   function useMyLocation(){
     if(!('geolocation' in navigator)){
       setStatus('Your browser does not support location lookup. Please enter a postcode manually.', 'error');
@@ -939,9 +892,6 @@
         try{
           const { latitude, longitude, accuracy } = position.coords;
 
-          // Run both lookups in parallel for speed, but only ever use the
-          // postcode from postcodes.io as the source of truth — Nominatim's
-          // address details are used purely for the street/area wording.
           const [postcodeResult, addressResult] = await Promise.allSettled([
             reverseGeocodeToPostcode(latitude, longitude),
             reverseGeocodeToAddress(latitude, longitude)
@@ -961,17 +911,14 @@
                 setCurrentAddressLink(line, latitude, longitude);
               }
 
-              // Progressive enhancement: refine with the exact house
-              // number in the background — this can take a few seconds,
-              // so it must not hold up the spinner or the result already shown.
               refineAddressWithHouseNumber(latitude, longitude, accuracy, addressResult.value, postcode, requestId);
             }
           } else {
             const err = postcodeResult.reason;
             if(err.message === 'NOTFOUND'){
-              setStatus('Could not match your location to a UK postcode. Please enter one manually.', 'error');
+              setStatus('Could not match your location to a UK postcode.', 'error');
             } else {
-              setStatus(`Could not look up a postcode for your location. (${err.detail || err.message || err}) Please enter one manually.`, 'error');
+              setStatus(`Postcode lookup failed. Please enter one manually.`, 'error');
             }
           }
 
@@ -986,18 +933,15 @@
         if(err.code === err.PERMISSION_DENIED){
           setStatus('Location access was denied. Please enter your postcode manually.', 'error');
         } else if(err.code === err.TIMEOUT){
-          setStatus('Location lookup timed out. Please try again or enter your postcode manually.', 'error');
+          setStatus('Location lookup timed out. Please try again.', 'error');
         } else {
-          setStatus('Could not access your location. Please enter your postcode manually.', 'error');
+          setStatus('Could not access your location. Please enter it manually.', 'error');
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }
 
-  // Shares the resolved current-location address — via the native share
-  // sheet where supported (mobile browsers, most modern desktop browsers),
-  // or by copying it to the clipboard as a fallback.
   async function shareCurrentAddress(){
     if(!lastResolvedAddress) return;
 
@@ -1005,7 +949,6 @@
       try{
         await navigator.share({ title: 'My current location', text: lastResolvedAddress });
       } catch(err){
-        // AbortError just means the user closed the share sheet — not a real failure.
         if(err.name !== 'AbortError') console.warn('Share failed:', err);
       }
       return;
@@ -1016,7 +959,6 @@
         await navigator.clipboard.writeText(lastResolvedAddress);
         flashShareButton('Copied!');
       } catch(err){
-        console.warn('Clipboard write failed:', err);
         flashShareButton('Copy failed');
       }
       return;
@@ -1025,7 +967,6 @@
     flashShareButton('Copy failed');
   }
 
-  // Briefly swaps the Share button's label to give feedback, then restores it.
   function flashShareButton(tempLabel){
     const original = shareAddressBtn.innerHTML;
     shareAddressBtn.textContent = tempLabel;
@@ -1036,328 +977,192 @@
     }, 1500);
   }
 
-  // Map common free-text queries to OSM tag filters for Overpass.
-  // This only covers AMENITY/CATEGORY type searches (pharmacy, college, etc).
-  // Brand names (Lidl, Tesco...) and anything unrecognised go to Nominatim instead —
-  // see isBrandOrFreeTextQuery() below.
-  function buildOverpassFilters(queryRaw){
-    const q = queryRaw.trim().toLowerCase();
+  // UK-focused intent catalogue. Each intent can search several OSM categories and plain-language terms.
+  const INTENT_PROFILES = [
+    {
+      id: 'general-retail',
+      label: 'shops and retail',
+      aliases: ['shop','shops','shopping','local shop','local shops','high street shop','high street shops','retail','store','stores'],
+      filters: [
+        '["shop"]',
+        '["shop"="mall"]',
+        '["landuse"="retail"]'
+      ],
+      terms: ['shop','shops','shopping centre','retail park','supermarket','convenience store','corner shop','chemist','bakery','butcher','greengrocer','newsagent','charity shop','clothes shop','shoe shop','DIY shop','electronics shop','pet shop','bookshop']
+    },
+    {
+      id: 'shopping-centre',
+      label: 'shopping centres and retail parks',
+      aliases: ['shopping centre','shopping center','shopping mall','mall','retail park'],
+      filters: ['["shop"="mall"]','["landuse"="retail"]'],
+      terms: ['shopping centre','shopping mall','retail park']
+    },
+    {
+      id: 'pharmacy',
+      label: 'pharmacies and chemists',
+      aliases: ['pharmacy','pharmacies','chemist','chemists','dispensary','24 hour pharmacy','late night pharmacy'],
+      filters: ['["amenity"="pharmacy"]','["healthcare"="pharmacy"]'],
+      terms: ['pharmacy','chemist','Boots pharmacy','Superdrug pharmacy','24 hour pharmacy']
+    },
+    {
+      id: 'physiotherapy',
+      label: 'physiotherapy services',
+      aliases: ['physiotherapy','physio','physiotherapist','physiotherapists','neurophysiotherapy','neuro physiotherapy','sports physio','physical therapy'],
+      filters: [
+        '["healthcare"~"physiotherapist|physiotherapy|physical_therapist",i]',
+        '["healthcare:speciality"~"physiotherapy|neurology|sports",i]',
+        '["amenity"="clinic"]["healthcare:speciality"~"physiotherapy|neurology",i]'
+      ],
+      terms: ['physiotherapy','physiotherapist','neurophysiotherapy','neuro physiotherapy','sports physiotherapy','rehabilitation clinic']
+    },
+    {
+      id: 'jewellery',
+      label: 'jewellers and jewellery shops',
+      aliases: ['jewellery','jewelry','jeweller','jewellers','jeweler','jewelers','jewellery shop','jewelry store'],
+      filters: ['["shop"="jewelry"]'],
+      terms: ['jeweller','jewellers','jewellery shop','jewelry store']
+    },
+    {
+      id: 'groceries',
+      label: 'food shops and convenience stores',
+      aliases: ['grocery','groceries','grocery shop','food shop','corner shop','convenience store','mini market','minimarket','supermarket'],
+      filters: ['["shop"~"supermarket|convenience|general|newsagent|greengrocer",i]'],
+      terms: ['supermarket','grocery shop','corner shop','convenience store','mini market','newsagent','greengrocer']
+    },
+    {
+      id: 'bakery', label: 'bakeries', aliases: ['bakery','baker','bakers'],
+      filters: ['["shop"="bakery"]'], terms: ['bakery','baker']
+    },
+    {
+      id: 'butcher', label: 'butchers', aliases: ['butcher','butchers','butcher shop'],
+      filters: ['["shop"="butcher"]'], terms: ['butcher','butchers']
+    },
+    {
+      id: 'charity-shop', label: 'charity shops', aliases: ['charity shop','charity shops','thrift shop'],
+      filters: ['["shop"="charity"]'], terms: ['charity shop']
+    },
+    {
+      id: 'clothes', label: 'clothes shops', aliases: ['clothes shop','clothing store','fashion shop','clothes'],
+      filters: ['["shop"~"clothes|fashion",i]'], terms: ['clothes shop','fashion shop']
+    },
+    {
+      id: 'shoes', label: 'shoe shops', aliases: ['shoe shop','shoe shops','shoes','footwear'],
+      filters: ['["shop"="shoes"]'], terms: ['shoe shop','footwear']
+    },
+    {
+      id: 'diy', label: 'DIY and hardware shops', aliases: ['diy','diy shop','diy store','hardware store','hardware shop','home improvement'],
+      filters: ['["shop"~"doityourself|hardware|trade",i]'], terms: ['DIY shop','hardware store','home improvement']
+    },
+    {
+      id: 'electronics', label: 'electronics shops', aliases: ['electronics','electronics shop','electronics store','computer shop','mobile phone shop'],
+      filters: ['["shop"~"electronics|computer|mobile_phone",i]'], terms: ['electronics shop','computer shop','mobile phone shop']
+    },
+    {
+      id: 'pet-shop', label: 'pet shops', aliases: ['pet shop','pet store','pets'],
+      filters: ['["shop"="pet"]'], terms: ['pet shop']
+    },
+    {
+      id: 'books', label: 'bookshops', aliases: ['bookshop','bookshops','book store','bookstore','books'],
+      filters: ['["shop"="books"]'], terms: ['bookshop','book store']
+    },
+    {
+      id: 'gp', label: 'GP surgeries and doctors', aliases: ['gp','gp surgery','doctor','doctors','doctor surgery','medical centre','health centre'],
+      filters: ['["amenity"="doctors"]','["healthcare"="doctor"]','["healthcare"="centre"]'],
+      terms: ['GP surgery','doctor surgery','medical centre','health centre']
+    },
+    {
+      id: 'hospital', label: 'hospitals and emergency departments', aliases: ['hospital','a&e','accident and emergency','emergency room','emergency department'],
+      filters: ['["amenity"="hospital"]','["healthcare"="hospital"]'],
+      terms: ['hospital','A&E','emergency department']
+    },
+    {
+      id: 'dentist', label: 'dentists', aliases: ['dentist','dentists','dental clinic'],
+      filters: ['["amenity"="dentist"]','["healthcare"="dentist"]'], terms: ['dentist','dental clinic']
+    },
+    {
+      id: 'transport-train', label: 'railway stations', aliases: ['train station','train stations','railway station','rail station'],
+      filters: ['["railway"="station"]','["public_transport"="station"]["train"="yes"]'], terms: ['train station','railway station']
+    },
+    {
+      id: 'transport-bus', label: 'bus stops and stations', aliases: ['bus stop','bus stops','bus station','coach station'],
+      filters: ['["highway"="bus_stop"]','["amenity"="bus_station"]','["public_transport"="platform"]["bus"="yes"]'], terms: ['bus stop','bus station','coach station']
+    },
+    {
+      id: 'post-office', label: 'post offices', aliases: ['post office','post offices'],
+      filters: ['["amenity"="post_office"]'], terms: ['post office']
+    },
+    {
+      id: 'fuel', label: 'petrol stations', aliases: ['petrol station','fuel station','petrol','garage'],
+      filters: ['["amenity"="fuel"]'], terms: ['petrol station','fuel station']
+    },
+    {
+      id: 'cash', label: 'cash machines and banks', aliases: ['cash machine','cashpoint','atm','cash point'],
+      filters: ['["amenity"="atm"]','["amenity"="bank"]["atm"="yes"]'], terms: ['ATM','cash machine','cashpoint']
+    }
+  ];
 
-    const exactMap = {
-      'supermarket': '["shop"="supermarket"]',
-      'pharmacy': '["amenity"="pharmacy"]',
-      'chemist': '["amenity"="pharmacy"]',
-      'gp surgery': '["amenity"="doctors"]',
-      'gp': '["amenity"="doctors"]',
-      'doctor': '["amenity"="doctors"]',
-      'doctors': '["amenity"="doctors"]',
-      'dentist': '["amenity"="dentist"]',
-      'hospital': '["amenity"="hospital"]',
-      'post office': '["amenity"="post_office"]',
-      'train station': '["railway"="station"]',
-      'train stations': '["railway"="station"]',
-      'railway station': '["railway"="station"]',
-      'railway stations': '["railway"="station"]',
-      'rail station': '["railway"="station"]',
-      'station': '["railway"="station"]',
-      'stations': '["railway"="station"]',
-      'railway': '["railway"="station"]',
-      'railways': '["railway"="station"]',
-      'rail': '["railway"="station"]',
-      'train': '["railway"="station"]',
-      'trains': '["railway"="station"]',
-      'bus stop': '["highway"="bus_stop"]',
-      'bus stops': '["highway"="bus_stop"]',
-      'bus station': '["amenity"="bus_station"]',
-      'bus stations': '["amenity"="bus_station"]',
-      'coach station': '["amenity"="bus_station"]',
-      'coach stations': '["amenity"="bus_station"]',
-      'coach stop': '["highway"="bus_stop"]',
-      'coach stops': '["highway"="bus_stop"]',
-      'bus': '["amenity"="bus_station"]',
-      'buses': '["amenity"="bus_station"]',
-      'coach': '["amenity"="bus_station"]',
-      'coaches': '["amenity"="bus_station"]',
-      'college': '["amenity"="college"]',
-      'university': '["amenity"="university"]',
-      'school': '["amenity"="school"]',
-      'library': '["amenity"="library"]',
-      'park': '["leisure"="park"]',
-      'petrol station': '["amenity"="fuel"]',
-      'fuel station': '["amenity"="fuel"]',
-      'petrol': '["amenity"="fuel"]',
-      'gym': '["leisure"="fitness_centre"]',
-      'cinema': '["amenity"="cinema"]',
-      'restaurant': '["amenity"="restaurant"]',
-      'cafe': '["amenity"="cafe"]',
-      'coffee shop': '["amenity"="cafe"]',
-      'pub': '["amenity"="pub"]',
-      'bank': '["amenity"="bank"]',
-      'cash machine': '["amenity"="atm"]',
-      'atm': '["amenity"="atm"]',
-      'vet': '["amenity"="veterinary"]',
-      'dog park': '["leisure"="dog_park"]',
-      'playground': '["leisure"="playground"]',
-      'church': '["amenity"="place_of_worship"]',
-      'mosque': '["amenity"="place_of_worship"]["religion"="muslim"]',
-      'leisure centre': '["leisure"="sports_centre"]',
-      'swimming pool': '["leisure"="swimming_pool"]',
-      'car park': '["amenity"="parking"]',
-      'parking': '["amenity"="parking"]',
-      'recycling': '["amenity"="recycling"]',
-      'vets': '["amenity"="veterinary"]',
+  const SIMPLE_CATEGORY_MAP = {
+    'college':['["amenity"="college"]'], 'university':['["amenity"="university"]'],
+    'school':['["amenity"="school"]'], 'library':['["amenity"="library"]'],
+    'park':['["leisure"="park"]'], 'gym':['["leisure"="fitness_centre"]','["leisure"="sports_centre"]'],
+    'cinema':['["amenity"="cinema"]'], 'restaurant':['["amenity"="restaurant"]'],
+    'cafe':['["amenity"="cafe"]'], 'coffee shop':['["amenity"="cafe"]'],
+    'pub':['["amenity"="pub"]'], 'bank':['["amenity"="bank"]']
+  };
 
-      // --- additional shops ---
-      'newsagent': '["shop"="newsagent"]',
-      'newsagents': '["shop"="newsagent"]',
-      'off licence': '["shop"="alcohol"]',
-      'off license': '["shop"="alcohol"]',
-      'liquor store': '["shop"="alcohol"]',
-      'alcohol shop': '["shop"="alcohol"]',
-      'corner shop': '["shop"="convenience"]',
-      'convenience store': '["shop"="convenience"]',
-      'mini market': '["shop"="convenience"]',
-      'bakery': '["shop"="bakery"]',
-      'baker': '["shop"="bakery"]',
-      'butcher': '["shop"="butcher"]',
-      'butchers': '["shop"="butcher"]',
-      'greengrocer': '["shop"="greengrocer"]',
-      'greengrocers': '["shop"="greengrocer"]',
-      'fishmonger': '["shop"="seafood"]',
-      'hairdresser': '["shop"="hairdresser"]',
-      'hairdressers': '["shop"="hairdresser"]',
-      'barber': '["shop"="hairdresser"]',
-      'barbers': '["shop"="hairdresser"]',
-      'beauty salon': '["shop"="beauty"]',
-      'nail salon': '["shop"="beauty"]',
-      'florist': '["shop"="florist"]',
-      'florists': '["shop"="florist"]',
-      'bookshop': '["shop"="books"]',
-      'bookshops': '["shop"="books"]',
-      'bookstore': '["shop"="books"]',
-      'charity shop': '["shop"="charity"]',
-      'charity shops': '["shop"="charity"]',
-      'thrift store': '["shop"="charity"]',
-      'clothes shop': '["shop"="clothes"]',
-      'clothing store': '["shop"="clothes"]',
-      'shoe shop': '["shop"="shoes"]',
-      'shoe shops': '["shop"="shoes"]',
-      'electronics store': '["shop"="electronics"]',
-      'hardware store': '["shop"="hardware"]',
-      'diy store': '["shop"="doityourself"]',
-      'garden centre': '["shop"="garden_centre"]',
-      'garden center': '["shop"="garden_centre"]',
-      'jewellers': '["shop"="jewelry"]',
-      'jewelers': '["shop"="jewelry"]',
-      'jewellery shop': '["shop"="jewelry"]',
-      'opticians': '["shop"="optician"]',
-      'optician': '["shop"="optician"]',
-      'dry cleaner': '["shop"="dry_cleaning"]',
-      'dry cleaners': '["shop"="dry_cleaning"]',
-      'laundrette': '["shop"="laundry"]',
-      'laundromat': '["shop"="laundry"]',
-      'launderette': '["shop"="laundry"]',
-      'tailor': '["shop"="tailor"]',
-      'mobile phone shop': '["shop"="mobile_phone"]',
-      'phone shop': '["shop"="mobile_phone"]',
-      'toy shop': '["shop"="toys"]',
-      'toy shops': '["shop"="toys"]',
-      'pet shop': '["shop"="pet"]',
-      'pet store': '["shop"="pet"]',
-      'department store': '["shop"="department_store"]',
-      'shopping centre': '["shop"="mall"]',
-      'shopping center': '["shop"="mall"]',
-      'mall': '["shop"="mall"]',
-      'wine shop': '["shop"="wine"]',
-      'sports shop': '["shop"="sports"]',
-      'furniture shop': '["shop"="furniture"]',
-      'stationery shop': '["shop"="stationery"]',
-
-      // --- food & drink ---
-      'fast food': '["amenity"="fast_food"]',
-      'takeaway': '["amenity"="fast_food"]',
-      'take away': '["amenity"="fast_food"]',
-      'bar': '["amenity"="bar"]',
-      'wine bar': '["amenity"="bar"]',
-      'food court': '["amenity"="food_court"]',
-      'bakery cafe': '["shop"="bakery"]',
-      'ice cream shop': '["amenity"="ice_cream"]',
-      'ice cream': '["amenity"="ice_cream"]',
-
-      // --- transport ---
-      'tube station': '["railway"="station"]["station"="subway"]',
-      'underground station': '["railway"="station"]["station"="subway"]',
-      'metro station': '["railway"="station"]["station"="subway"]',
-      'tram stop': '["railway"="tram_stop"]',
-      'airport': '["aeroway"="aerodrome"]',
-      'taxi rank': '["amenity"="taxi"]',
-      'car rental': '["amenity"="car_rental"]',
-      'car hire': '["amenity"="car_rental"]',
-      'bike rack': '["amenity"="bicycle_parking"]',
-      'bicycle parking': '["amenity"="bicycle_parking"]',
-      'ev charging': '["amenity"="charging_station"]',
-      'ev charger': '["amenity"="charging_station"]',
-      'electric car charging': '["amenity"="charging_station"]',
-      'charging point': '["amenity"="charging_station"]',
-      'car wash': '["shop"="car_wash"]',
-      'mechanic': '["shop"="car_repair"]',
-      'garage': '["shop"="car_repair"]',
-      'car repair': '["shop"="car_repair"]',
-      'mot centre': '["shop"="car_repair"]',
-      'tyre shop': '["shop"="tyres"]',
-      'car dealer': '["shop"="car"]',
-      'car dealership': '["shop"="car"]',
-
-      // --- health & services ---
-      'optometrist': '["shop"="optician"]',
-      'physiotherapist': '["amenity"="clinic"]["healthcare"="physiotherapist"]',
-      'physio': '["amenity"="clinic"]["healthcare"="physiotherapist"]',
-      'clinic': '["amenity"="clinic"]',
-      'urgent care': '["amenity"="clinic"]',
-      'a&e': '["amenity"="hospital"]',
-      'emergency room': '["amenity"="hospital"]',
-      'care home': '["amenity"="social_facility"]["social_facility"="nursing_home"]',
-      'nursing home': '["amenity"="social_facility"]["social_facility"="nursing_home"]',
-      'job centre': '["office"="employment_agency"]',
-      'jobcentre': '["office"="employment_agency"]',
-      'citizens advice': '["office"="charity"]',
-      'town hall': '["amenity"="townhall"]',
-      'council office': '["amenity"="townhall"]',
-      'police station': '["amenity"="police"]',
-      'fire station': '["amenity"="fire_station"]',
-      'courthouse': '["amenity"="courthouse"]',
-      'court': '["amenity"="courthouse"]',
-      'embassy': '["office"="diplomatic"]',
-      'solicitor': '["office"="lawyer"]',
-      'solicitors': '["office"="lawyer"]',
-      'lawyer': '["office"="lawyer"]',
-      'accountant': '["office"="accountant"]',
-      'estate agent': '["office"="estate_agent"]',
-      'estate agents': '["office"="estate_agent"]',
-      'letting agent': '["office"="estate_agent"]',
-
-      // --- finance ---
-      'building society': '["amenity"="bank"]',
-      'cashpoint': '["amenity"="atm"]',
-      'cash point': '["amenity"="atm"]',
-      'currency exchange': '["amenity"="bureau_de_change"]',
-      'bureau de change': '["amenity"="bureau_de_change"]',
-
-      // --- leisure & culture ---
-      'museum': '["tourism"="museum"]',
-      'art gallery': '["tourism"="gallery"]',
-      'gallery': '["tourism"="gallery"]',
-      'theatre': '["amenity"="theatre"]',
-      'theater': '["amenity"="theatre"]',
-      'sports centre': '["leisure"="sports_centre"]',
-      'sports center': '["leisure"="sports_centre"]',
-      'leisure center': '["leisure"="sports_centre"]',
-      'tennis court': '["leisure"="pitch"]["sport"="tennis"]',
-      'football pitch': '["leisure"="pitch"]["sport"="soccer"]',
-      'golf course': '["leisure"="golf_course"]',
-      'climbing wall': '["sport"="climbing"]',
-      'skate park': '["leisure"="pitch"]["sport"="skateboard"]',
-      'beach': '["natural"="beach"]',
-      'nature reserve': '["leisure"="nature_reserve"]',
-      'campsite': '["tourism"="camp_site"]',
-      'caravan park': '["tourism"="caravan_site"]',
-      'hotel': '["tourism"="hotel"]',
-      'hotels': '["tourism"="hotel"]',
-      'hostel': '["tourism"="hostel"]',
-      'bed and breakfast': '["tourism"="guest_house"]',
-      'b&b': '["tourism"="guest_house"]',
-      'zoo': '["tourism"="zoo"]',
-      'aquarium': '["tourism"="aquarium"]',
-      'bowling alley': '["leisure"="bowling_alley"]',
-      'nightclub': '["amenity"="nightclub"]',
-      'casino': '["amenity"="casino"]',
-
-      // --- education / places of worship ---
-      'nursery': '["amenity"="kindergarten"]',
-      'kindergarten': '["amenity"="kindergarten"]',
-      'preschool': '["amenity"="kindergarten"]',
-      'sixth form': '["amenity"="college"]',
-      'synagogue': '["amenity"="place_of_worship"]["religion"="jewish"]',
-      'temple': '["amenity"="place_of_worship"]["religion"="hindu"]',
-      'gurdwara': '["amenity"="place_of_worship"]["religion"="sikh"]',
-      'cemetery': '["landuse"="cemetery"]',
-      'graveyard': '["landuse"="cemetery"]',
-
-      // --- misc utility ---
-      'toilet': '["amenity"="toilets"]',
-      'toilets': '["amenity"="toilets"]',
-      'public toilet': '["amenity"="toilets"]',
-      'water fountain': '["amenity"="drinking_water"]',
-      'drinking water': '["amenity"="drinking_water"]',
-      'playgroup': '["leisure"="playground"]'
-    };
-
-    if(exactMap[q]) return [exactMap[q]];
-
-    // Normalise for fuzzier matching: collapse whitespace, strip common
-    // filler/prefix words ("nearest", "my", "the", "a", "local", "near me"...)
-    // so e.g. "nearest pharmacy please" or "my local gp" still resolve.
-    const FILLER_WORDS = new Set([
-      'nearest','near','nearby','closest','find','search','my','me','the','a','an',
-      'local','please','around','here','some','any','good','best','that','is','open'
-    ]);
-    const stripFiller = (str) => str
-      .replace(/\bnear me\b/g, ' ')
-      .split(/\s+/)
-      .filter(w => w && !FILLER_WORDS.has(w))
-      .join(' ')
+  function normaliseIntentText(value){
+    return value.toLowerCase()
+      .replace(/[’']/g, "'")
+      .replace(/\b(find|show|search|locate|looking for|i need|i want|please)\b/g, ' ')
+      .replace(/\b(the|a|an|my|me|some|any|good|best|open|nearest|closest|nearby|local)\b/g, ' ')
+      .replace(/\bnear\s+me\b/g, ' ')
+      .replace(/[^a-z0-9&'\s-]/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
-
-    const qStripped = stripFiller(q);
-    if(qStripped && exactMap[qStripped]) return [exactMap[qStripped]];
-
-    // Naive singular/plural fold: try with/without trailing 's'.
-    const tryVariants = (str) => {
-      const variants = new Set([str]);
-      if(str.endsWith('s')) variants.add(str.slice(0, -1));
-      else variants.add(str + 's');
-      return variants;
-    };
-    for(const variant of tryVariants(qStripped)){
-      if(exactMap[variant]) return [exactMap[variant]];
-    }
-
-    // Word-boundary matching against known category keys in both directions —
-    // e.g. "nearest college campus" matches key "college", and a query that's
-    // just "doctors surgery" matches key "gp surgery" style multi-word keys
-    // when every word of the (shorter) key appears in the query.
-    const queryWords = new Set(qStripped.split(/\s+/).filter(Boolean));
-    const partial = [];
-    for(const key in exactMap){
-      const keyWords = key.split(/\s+/);
-      const allKeyWordsPresent = keyWords.every(kw => queryWords.has(kw) ||
-        [...queryWords].some(qw => qw === kw + 's' || qw + 's' === kw));
-      if(allKeyWordsPresent){
-        partial.push(exactMap[key]);
-        continue;
-      }
-      // Fallback: substring match either direction (handles compound terms
-      // like "supermarkets nearby" or "find a pharmacy").
-      if(qStripped.includes(key) || (key.length > 3 && key.includes(qStripped) && qStripped.length > 3)){
-        partial.push(exactMap[key]);
-      }
-    }
-    if(partial.length) return [...new Set(partial)];
-
-    // No known category match — caller should use Nominatim (and an
-    // Overpass name search) instead.
-    return null;
   }
 
-  // True if the query matches a known Overpass category (fast, indexed path).
-  // False means: brand name or free text — route to Nominatim instead.
+  function phraseMatches(text, alias){
+    if(text === alias) return true;
+    const words = alias.split(/\s+/);
+    return words.every(word => text.split(/\s+/).some(token => token === word || token === word + 's' || token + 's' === word));
+  }
+
+  function analyseIntent(queryRaw){
+    const normalised = normaliseIntentText(queryRaw);
+    const matches = INTENT_PROFILES.filter(profile =>
+      profile.aliases.some(alias => phraseMatches(normalised, alias))
+    );
+
+    if(!matches.length && SIMPLE_CATEGORY_MAP[normalised]){
+      return {
+        label: normalised,
+        filters: SIMPLE_CATEGORY_MAP[normalised],
+        terms: [normalised],
+        recognised: true
+      };
+    }
+
+    if(!matches.length){
+      return { label: queryRaw.trim(), filters: [], terms: [queryRaw.trim()], recognised: false };
+    }
+
+    return {
+      label: matches.map(m => m.label).join(', '),
+      filters: [...new Set(matches.flatMap(m => m.filters))],
+      terms: [...new Set([queryRaw.trim(), ...matches.flatMap(m => m.terms)])].slice(0, 18),
+      recognised: true
+    };
+  }
+
+  function buildOverpassFilters(queryRaw){
+    const intent = analyseIntent(queryRaw);
+    return intent.filters.length ? intent.filters : null;
+  }
+
   function hasOverpassCategory(queryRaw){
     return buildOverpassFilters(queryRaw) !== null;
   }
 
-  // ── Photon (Komoot) — fast, dedicated geocoding API built on Nominatim data ──
-  // Much more reliable than raw Overpass for free-text / brand searches,
-  // and significantly faster (dedicated infrastructure, no QL compilation).
   async function searchPhoton(lat, lon, queryRaw, radiusMeters, externalSignal){
     const params = new URLSearchParams({
       q: queryRaw,
@@ -1382,7 +1187,6 @@
       if(!res.ok) return [];
       const data = await res.json();
       const features = data.features || [];
-      // Filter to bounding box (Photon's radius bias isn't guaranteed)
       return features.map(f => {
         const [flon, flat] = f.geometry.coordinates;
         const dist = haversineMeters(lat, lon, flat, flon);
@@ -1398,14 +1202,12 @@
       }).filter(Boolean);
     } catch(err){
       clearTimeout(timeoutId);
-      if(externalSignal) externalSignal.removeEventListener('abort', onAbort);
       return [];
     } finally {
       if(externalSignal) externalSignal.removeEventListener('abort', onAbort);
     }
   }
 
-  // ── Overpass mirrors (kept as fallback for structured category queries) ──
   const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
@@ -1441,13 +1243,8 @@
     }
   }
 
-  // Nominatim: OpenStreetMap's official search/geocoding service.
-  // Used for brand names and free-text queries — simpler and more
-  // reliably available than hand-built Overpass QL for "search by name".
   async function searchNominatim(lat, lon, queryRaw, radiusMeters, externalSignal){
-    // Build a bounding box around the origin point (viewbox), used to bias
-    // and restrict results to the local area.
-    const latDelta = radiusMeters / 111000; // ~111km per degree latitude
+    const latDelta = radiusMeters / 111000; 
     const lonDelta = radiusMeters / (111000 * Math.cos(lat * Math.PI / 180));
     const viewbox = [
       lon - lonDelta, lat + latDelta,
@@ -1477,21 +1274,9 @@
       });
       clearTimeout(timeoutId);
 
-      if(!res.ok){
-        const e = new Error('NOMINATIM_HTTP');
-        e.detail = `HTTP ${res.status}`;
-        throw e;
-      }
+      if(!res.ok) throw new Error(`NOMINATIM_HTTP_${res.status}`);
 
-      let data;
-      try{
-        data = await res.json();
-      } catch(parseErr){
-        const e = new Error('NOMINATIM_BAD_RESPONSE');
-        e.detail = parseErr.message;
-        throw e;
-      }
-
+      let data = await res.json();
       return (data || []).map(item => ({
         name: item.namedetails && item.namedetails.name
           ? item.namedetails.name
@@ -1504,34 +1289,17 @@
 
     } catch(err){
       clearTimeout(timeoutId);
-      if(externalSignal && externalSignal.aborted){
-        throw new Error('CANCELLED');
-      }
-      if(err.name === 'AbortError'){
-        const e = new Error('NOMINATIM_TIMEOUT');
-        throw e;
-      }
-      throw err;
+      if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+      return [];
     } finally {
       if(externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
     }
   }
 
-  // Escapes a string for safe use inside an Overpass QL regex literal.
   function escapeOverpassRegex(str){
     return str.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&');
   }
 
-  // Builds an Overpass QL regex (without surrounding quotes) that matches a
-  // term flexibly — not just the exact text, but close variants of it too:
-  //  - as written, case-insensitive
-  //  - for short acronym-like terms (e.g. "DDL"): with optional
-  //    spaces/punctuation between each letter, since some OSM names are
-  //    entered as "D D L Davies" rather than "DDL Davies"
-  //  - with optional trailing "s" (singular/plural variants)
-  //  - allowing minor character drift around the edges (an extra/missing
-  //    character at the very start or end), so close-but-not-exact spellings
-  //    of a name still match
   function buildFlexibleRegex(term){
     const escaped = escapeOverpassRegex(term);
     const alternatives = new Set([escaped]);
@@ -1541,16 +1309,12 @@
       alternatives.add(spaced);
     }
 
-    // Singular/plural drift, e.g. "Boots" should also catch "Boot".
     if(/[A-Za-z]$/.test(term) && !/s$/i.test(term)){
       alternatives.add(escaped + 's?');
     } else if(/s$/i.test(term)){
       alternatives.add(escaped.replace(/s$/i, '') + '?s?');
     }
 
-    // Allow one character of slack at the start/end for words of reasonable
-    // length, to catch close spelling variants (e.g. "Sainsbury" vs
-    // "Sainsburys", "Tesco" vs "Tescos", minor OSM data typos).
     if(term.replace(/[^\p{L}\p{N}]/gu, '').length >= 4){
       alternatives.add('.?' + escaped + '.?');
     }
@@ -1558,11 +1322,6 @@
     return [...alternatives].join('|');
   }
 
-  // Generic English category/descriptor words that, on their own, are NOT
-  // part of a place's actual name — e.g. in "pharmacy DDL" or a mixed
-  // query like "داروخانه DDL" ("pharmacy DDL"), the real searchable name
-  // is "DDL". Stripping these (plus FILLER_WORDS) out leaves just the
-  // brand/name token(s) to search by.
   const GENERIC_CATEGORY_WORDS = new Set([
     'pharmacy','pharmacies','chemist','chemists','shop','shops','store','stores',
     'restaurant','restaurants','cafe','cafes','coffee','supermarket','supermarkets',
@@ -1574,145 +1333,29 @@
     'bus','buses','coach','coaches','stop','stops'
   ]);
 
-  // Generic filler words (English) that should never be treated as part of
-  // a place's brand/name when extracting a name token from a free-text query.
-  // NOTE: this was previously referenced but never defined — a bug that
-  // silently broke the whole script (ReferenceError on every search attempt).
   const FILLER_WORDS_GLOBAL = new Set([
     'nearest','near','nearby','closest','find','search','my','me','the','a','an',
     'local','please','around','here','some','any','good','best','that','is','open'
   ]);
 
-  // Pulls out token(s) that look like a brand/proper name (Latin letters
-  // and digits, not a filler or generic category word) from a free-text
-  // query. Returns null if nothing distinctive is found, in which case
-  // callers should just search using the original query as-is.
   function extractNameToken(queryRaw){
     const tokens = queryRaw.trim().split(/\s+/).filter(Boolean);
     const nameTokens = tokens.filter(t => {
       const clean = t.replace(/[^\p{L}\p{N}&'-]/gu, '');
       if(!clean) return false;
-      // Only Latin-script alphanumeric tokens count as candidate name parts —
-      // OSM place names in the UK are almost always written in Latin script,
-      // even when the rest of the user's query is in another language.
       if(!/^[A-Za-z0-9&'-]+$/.test(clean)) return false;
       const lower = clean.toLowerCase();
       return !FILLER_WORDS_GLOBAL.has(lower) && !GENERIC_CATEGORY_WORDS.has(lower);
     });
     if(!nameTokens.length) return null;
-    const joined = nameTokens.join(' ');
-    return joined.toLowerCase() === queryRaw.trim().toLowerCase() ? null : joined;
+    return nameTokens.join(' ');
   }
-
-  // ── Synonym / related-term expansion ──────────────────────────────────────
-  // Maps common query words (including Persian equivalents) to the best
-  // English search term to use with Nominatim / Photon. This dramatically
-  // improves results when the user types in Persian, uses abbreviations,
-  // or uses a word that is closely related but not exact.
-  const SYNONYM_MAP = {
-    // Persian → English
-    'داروخانه': 'pharmacy', 'دارو': 'pharmacy', 'دکتر': 'doctor', 'بیمارستان': 'hospital',
-    'سوپرمارکت': 'supermarket', 'فروشگاه': 'shop', 'کافه': 'cafe', 'رستوران': 'restaurant',
-    'بانک': 'bank', 'مدرسه': 'school', 'دانشگاه': 'university', 'پارک': 'park',
-    'ایستگاه': 'station', 'اتوبوس': 'bus', 'دندانپزشک': 'dentist', 'کتابخانه': 'library',
-    'پمپ بنزین': 'petrol station', 'باشگاه': 'gym', 'مسجد': 'mosque',
-    'ایستگاه قطار': 'railway station', 'قطار': 'railway station', 'راه آهن': 'railway station',
-    'ایستگاه اتوبوس': 'bus station',
-    // English abbreviations / colloquial
-    'gp': 'doctor surgery', 'a&e': 'hospital emergency', 'aldi': 'Aldi supermarket',
-    'lidl': 'Lidl supermarket', 'tesco': 'Tesco supermarket', 'asda': 'Asda supermarket',
-    'morrisons': 'Morrisons supermarket', 'sainsburys': 'Sainsbury\'s supermarket',
-    'waitrose': 'Waitrose supermarket', 'boots': 'Boots pharmacy', 'greggs': 'Greggs bakery',
-    'mcdonalds': 'McDonald\'s', "mcdonald's": "McDonald's", 'kfc': 'KFC restaurant',
-    'costa': 'Costa Coffee', 'starbucks': 'Starbucks', 'subway': 'Subway',
-    'post office': 'post office', 'gp surgery': 'doctor surgery',
-    'ev charging': 'electric vehicle charging station', 'ev charger': 'electric vehicle charging',
-    'cash machine': 'ATM cashpoint', 'cashpoint': 'ATM bank', 'cash point': 'ATM bank',
-    'off licence': 'off licence alcohol shop', 'off license': 'off licence alcohol shop',
-    'corner shop': 'convenience store', 'mini market': 'convenience store',
-    'petrol station': 'petrol station fuel', 'petrol': 'petrol station fuel',
-    'car park': 'parking', 'car wash': 'car wash', 'mot': 'MOT car repair garage',
-    'leisure centre': 'sports centre leisure', 'swimming pool': 'swimming pool leisure',
-    'police': 'police station', 'fire station': 'fire station',
-    // Railway / train — all near-synonyms point to the same OSM concept
-    // (railway=station), so "railway", "train", "railway station" and
-    // "train station" all return the same results.
-    'railway station': 'railway station', 'railway stations': 'railway station',
-    'train station': 'railway station', 'train stations': 'railway station',
-    'rail station': 'railway station', 'railway': 'railway station',
-    'railways': 'railway station', 'train': 'railway station', 'trains': 'railway station',
-    'rail': 'railway station',
-    // Bus / coach — treated as the same concept (a stop/station for
-    // road-based public transport), since OSM doesn't reliably distinguish
-    // a "coach station" from a "bus station".
-    'bus station': 'bus station', 'bus stations': 'bus station',
-    'coach station': 'bus station', 'coach stations': 'bus station',
-    'bus': 'bus station', 'buses': 'bus station', 'coach': 'bus station', 'coaches': 'bus station',
-    'bus stop': 'bus stop', 'bus stops': 'bus stop',
-    'coach stop': 'bus stop', 'coach stops': 'bus stop'
-  };
-
-  // Translates / expands a query using the synonym map before searching.
-  // Returns the expanded query string (may be the same as input).
-  //
-  // Rewritten to match whole words/phrases only (word-boundary aware),
-  // not raw substrings — the old version used `lower.includes(key)`,
-  // which could wrongly match a short key (e.g. "gym", "rail") *inside*
-  // an unrelated longer word (e.g. "gymnastics", "trailer"), and could
-  // only ever apply one synonym per query. This version:
-  //   1) checks for an exact whole-query match first (fast path),
-  //   2) otherwise scans known phrases longest-first so multi-word
-  //      synonyms (e.g. "railway station") are matched before shorter
-  //      ones (e.g. "railway") that are substrings of them,
-  //   3) replaces *every* matching whole word/phrase found in the query
-  //      (so "bus or train" correctly expands both terms), using regex
-  //      word boundaries so partial-word matches are never made.
-  const SYNONYM_KEYS_BY_LENGTH = Object.keys(SYNONYM_MAP).sort((a, b) => b.length - a.length);
 
   function expandQuery(queryRaw){
-    const trimmed = queryRaw.trim();
-    const lower = trimmed.toLowerCase();
-    if(SYNONYM_MAP[lower]) return SYNONYM_MAP[lower];
-
-    let result = trimmed;
-    const replacedSpans = []; // [start, end] ranges already matched, to avoid overlap
-
-    for(const key of SYNONYM_KEYS_BY_LENGTH){
-      if(key.length <= 2) continue; // skip ultra-short keys entirely (too ambiguous)
-      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const re = new RegExp(`(^|\\s)(${escapedKey})(?=\\s|$)`, 'gi');
-      let match;
-      while((match = re.exec(result)) !== null){
-        const start = match.index + match[1].length;
-        const end = start + match[2].length;
-        const overlaps = replacedSpans.some(([s, e]) => start < e && end > s);
-        if(!overlaps) replacedSpans.push([start, end]);
-      }
-    }
-
-    if(!replacedSpans.length) return trimmed;
-
-    // Apply replacements right-to-left so earlier indices stay valid.
-    replacedSpans.sort((a, b) => b[0] - a[0]);
-    for(const [start, end] of replacedSpans){
-      const original = result.slice(start, end);
-      const val = SYNONYM_MAP[original.toLowerCase()];
-      if(val) result = result.slice(0, start) + val + result.slice(end);
-    }
-
-    return result.trim();
+    const intent = analyseIntent(queryRaw);
+    return intent.recognised ? intent.label : queryRaw.trim();
   }
 
-  // Free-text / brand-name search run directly against Overpass, matching
-  // the OSM "name" (and "brand") tags case-insensitively. This catches a lot
-  // of real places that Nominatim's geocoder index misses or ranks low —
-  // e.g. a specific shop branch that has no separate Nominatim entry, or a
-  // brand name embedded in a longer/mixed-language query — so it's run
-  // alongside Nominatim rather than instead of it. Accepts one or more
-  // search terms (e.g. the full query plus an extracted name token) and
-  // merges results from all of them. Each term is matched flexibly (see
-  // buildFlexibleRegex), so close variants/near-misses of the name are
-  // picked up too, not just an exact match.
   async function searchOverpassByName(lat, lon, terms, radiusMeters, externalSignal){
     const termList = (Array.isArray(terms) ? terms : [terms]).filter(Boolean);
     if(!termList.length) return [];
@@ -1742,11 +1385,6 @@
 
       return (data.elements || []).map(elementToPlace).filter(Boolean);
     } catch(err){
-      if(err.message === 'CANCELLED') throw err;
-      // Name-search is a supplementary source — if every mirror fails, just
-      // return no extra results rather than failing the whole search, since
-      // Nominatim may still succeed.
-      console.warn('Overpass name-search unavailable:', err);
       return [];
     }
   }
@@ -1763,15 +1401,13 @@
 
   async function searchOverpass(lat, lon, queryRaw, radiusMeters, externalSignal){
     const filters = buildOverpassFilters(queryRaw);
-    if(!filters){
-      // Should not normally happen — caller checks hasOverpassCategory() first —
-      // but guard against it rather than sending Overpass a malformed empty query.
-      return [];
-    }
+    if(!filters) return [];
+    
     const around = `(around:${radiusMeters},${lat},${lon})`;
     const clauses = filters.map(f => `
       node${f}${around};
       way${f}${around};
+      relation${f}${around};
     `).join('\n');
 
     const ql = `
@@ -1818,7 +1454,7 @@
   }
 
   function humaniseTagType(tags){
-    const val = tags.shop || tags.amenity || tags.leisure || tags.railway;
+    const val = tags.shop || tags.amenity || tags.healthcare || tags['healthcare:speciality'] || tags.leisure || tags.railway || tags.landuse;
     if(!val) return null;
     return val.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -1826,7 +1462,7 @@
   function dedupeByLocation(places){
     const seen = new Set();
     return places.filter(p=>{
-      const key = `${p.lat.toFixed(4)},${p.lon.toFixed(4)},${p.name}`;
+      const key = `${p.lat.toFixed(4)},${p.lon.toFixed(4)},${p.name.toLowerCase().trim()}`;
       if(seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1845,7 +1481,7 @@
             <line x1="20" y1="20" x2="44" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
             <line x1="44" y1="20" x2="20" y2="44" stroke="#C8102E" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
-          <p>No results for "<b>${displayTerm}</b>" within range of <b>${escapeHTML(origin.label)}</b>. Try a wider or more general term, e.g. "supermarket" instead of a specific brand.</p>
+          <p>No results for "<b>${displayTerm}</b>" within range of <b>${escapeHTML(origin.label)}</b>. Try a wider or more general term.</p>
         </div>`;
       return;
     }
@@ -1858,16 +1494,10 @@
 
     const rows = withDist.map((p, idx)=>{
       const d = formatDistance(p.dist);
-      // Directions FROM the searched postcode TO this result, walking route
-      // (not just a pin on the map, and not driving directions).
       const directionsURL = `https://www.google.com/maps/dir/?api=1` +
         `&origin=${encodeURIComponent(origin.label)}` +
         `&destination=${p.lat},${p.lon}` +
         `&travelmode=walking`;
-      // Embeddable walking-route map shown inline on the page (no API key
-      // needed — this is Google's classic no-key embed endpoint). Built
-      // lazily (only when the user opens it) so 20 results don't try to
-      // load 20 iframes at once.
       const embedURL = `https://www.google.com/maps?` +
         `saddr=${encodeURIComponent(origin.label)}` +
         `&daddr=${p.lat},${p.lon}` +
@@ -1880,7 +1510,7 @@
         <li class="result">
           ${compassSVG(p.brg)}
           <div class="result-main">
-            <p class="name"><a href="${directionsURL}" target="_blank" rel="noopener" class="name-link" title="Walking directions from ${escapeHTML(origin.label)}">${escapeHTML(p.name)}</a></p>
+            <p class="name"><a href="${directionsURL}" target="_blank" rel="noopener" class="name-link">${escapeHTML(p.name)}</a></p>
             <p class="addr">${addrLine}</p>
             <button type="button" class="route-toggle-btn" data-map-id="${mapId}" data-embed-url="${escapeHTML(embedURL)}" onclick="window.__toggleRouteMap(this)">🚶 Show walking route on map</button>
             <div class="route-map-frame" id="${mapId}" hidden></div>
@@ -1901,20 +1531,15 @@
     `;
   }
 
-  // Toggles the inline walking-route map under a result. The iframe's `src`
-  // is only set the first time it's opened (lazy-load), so collapsing and
-  // re-opening it doesn't reload the map, and results that are never
-  // opened never load an iframe at all.
   window.__toggleRouteMap = function(btn){
     const mapId = btn.getAttribute('data-map-id');
     const embedUrl = btn.getAttribute('data-embed-url');
     const frame = document.getElementById(mapId);
     if(!frame) return;
 
-    const isHidden = frame.hidden;
-    if(isHidden){
+    if(frame.hidden){
       if(!frame.dataset.loaded){
-        frame.innerHTML = `<iframe src="${embedUrl}" width="100%" height="280" style="border:0;border-radius:6px;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+        frame.innerHTML = `<iframe src="${embedUrl}" width="100%" height="280" style="border:0;border-radius:6px;" loading="lazy"></iframe>`;
         frame.dataset.loaded = '1';
       }
       frame.hidden = false;
@@ -1932,39 +1557,28 @@
   }
 
   async function findPlaces(lat, lon, queryRaw, radiusMeters, signal){
+    const intent = analyseIntent(queryRaw);
     const tasks = [];
 
-    // Photon: fastest, most reliable free-text and brand-name search.
-    tasks.push(searchPhoton(lat, lon, queryRaw, radiusMeters, signal));
+    // Search natural-language services with several UK terms, not just one literal phrase.
+    const languageTerms = intent.terms.slice(0, radiusMeters <= 5000 ? 10 : 6);
+    languageTerms.forEach(term => {
+      tasks.push(searchPhoton(lat, lon, term, radiusMeters, signal));
+      tasks.push(searchNominatim(lat, lon, term, radiusMeters, signal));
+    });
 
-    // Nominatim: also run in parallel — gives good results for UK amenities
-    // and catches things Photon might miss.
-    const nameToken = extractNameToken(queryRaw);
-    // Only the original query is sent to Nominatim — the extracted name
-    // token is still searched via Overpass-by-name below, so we get the
-    // same coverage with half the Nominatim requests (faster + less load).
-    tasks.push(searchNominatim(lat, lon, queryRaw, radiusMeters, signal));
-
-    // Overpass structured category query — only when a known OSM tag matches,
-    // since it is the most reliable for e.g. "all pharmacies nearby".
-    if(hasOverpassCategory(queryRaw)){
+    if(intent.filters.length){
       tasks.push(searchOverpass(lat, lon, queryRaw, radiusMeters, signal).catch(() => []));
     }
 
-    // Overpass name-based search — run only for shorter radii to avoid timeout.
-    if(radiusMeters <= 15000){
-      const overpassTerms = nameToken ? [queryRaw, nameToken] : [queryRaw];
+    // Keep business-name searching for queries such as "Aldi" or "Boots pharmacy".
+    const nameToken = extractNameToken(queryRaw);
+    if(radiusMeters <= 15000 && (!intent.recognised || nameToken)){
+      const overpassTerms = [...new Set([queryRaw, nameToken, ...languageTerms.slice(0, 4)].filter(Boolean))];
       tasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
     }
 
-    const settled = await raceWithGracePeriod(tasks, signal, 900);
-
-    const allFailed = settled.every(r => r.status === 'rejected');
-    if(allFailed){
-      const cancelled = settled.find(r => r.reason && r.reason.message === 'CANCELLED');
-      throw cancelled ? cancelled.reason : settled[0].reason;
-    }
-
+    const settled = await raceWithGracePeriod(tasks, signal, 1400);
     const combined = [];
     for(const r of settled){
       if(r.status === 'fulfilled') combined.push(...r.value);
@@ -1972,14 +1586,6 @@
     return combined;
   }
 
-  // Runs every task to completion like Promise.allSettled, but bounds the
-  // *total* wait once the first task finishes: any task still pending after
-  // `graceMs` more milliseconds is treated as "not yet resolved" (rejected
-  // with TIMED_OUT) so the caller isn't stuck waiting on the single slowest
-  // source (typically Overpass) when faster sources (Photon/Nominatim)
-  // already returned. This is the main fix for the "search is very slow"
-  // problem — previously the whole search waited for every source no
-  // matter how long the slowest one took.
   async function raceWithGracePeriod(tasks, externalSignal, graceMs){
     if(!tasks.length) return [];
     let firstSettledAt = null;
@@ -2024,25 +1630,18 @@
     const postcodeRaw = postcodeInput.value.trim();
     const queryRaw = queryInput.value.trim();
 
-    if(window.location.protocol === 'file:'){
-      setStatus('This page was opened directly from a file (file://) — most browsers block live data requests in that mode. Please open it through a web server (or use the version inside Claude) instead of double-clicking the file.', 'error');
-      return;
-    }
-
     if(!postcodeRaw){
       setStatus('Enter a UK postcode to search from.', 'error');
       postcodeInput.focus();
       return;
     }
     if(!queryRaw){
-      setStatus('Enter what you\'re looking for — a shop name, amenity, or service.', 'error');
+      setStatus('Enter what you\'re looking for.', 'error');
       queryInput.focus();
       return;
     }
 
-    // Expand/translate the query (handles Persian, abbreviations, synonyms)
     const queryExpanded = expandQuery(queryRaw);
-
     searchCancelled = false;
     activeController = new AbortController();
     const signal = activeController.signal;
@@ -2053,58 +1652,37 @@
 
     try{
       const origin = await geocodePostcode(postcodeRaw, signal);
-
       setStatus(`Searching near ${origin.label}…`, 'loading');
 
-      // First pass: 5 km — fast, covers most urban needs.
-      let places = await findPlaces(origin.lat, origin.lon, queryExpanded, 5000, signal);
+      let places = await findPlaces(origin.lat, origin.lon, queryRaw, 5000, signal);
       let usedRadius = 5000;
 
       if(places.length === 0){
-        setStatus(`Nothing close by — widening to 20 km…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryExpanded, 20000, signal);
+        setStatus(`Widening search to 20 km…`, 'loading');
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 20000, signal);
         usedRadius = 20000;
       }
 
       if(places.length === 0){
-        setStatus(`Still nothing — widening to 60 km…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryExpanded, 60000, signal);
+        setStatus(`Widening search to 60 km…`, 'loading');
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 60000, signal);
         usedRadius = 60000;
       }
 
       places = dedupeByLocation(places);
-
       const expandedNote = queryExpanded !== queryRaw ? ` (searched as: "${queryExpanded}")` : '';
       setStatus(places.length
         ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
-        : `No matches found nearby.${expandedNote}`, '');
+        : `No matches found.${expandedNote}`, '');
 
       renderResults(origin, places, queryRaw, queryExpanded);
 
-    } catch(err){
-      if(searchCancelled || err.message === 'CANCELLED' || err.name === 'AbortError'){
-        // Stop button already set the "Search stopped." message — don't overwrite it.
-        return;
-      }
-
-      console.error('Search failed:', err);
-
+    } catch(err) {
+      if(searchCancelled || err.name === 'AbortError') return;
       if(err.message === 'NOTFOUND'){
-        setStatus(`Couldn't find postcode "${postcodeRaw}" — check it's a valid UK postcode.`, 'error');
-      } else if(err.message === 'POSTCODE_NETWORK'){
-        setStatus(`Couldn't reach the postcode lookup service. Check your internet connection. (${err.detail || ''})`, 'error');
-      } else if(err.message === 'POSTCODE_HTTP'){
-        setStatus(`Postcode service returned an error. (${err.detail || ''})`, 'error');
-      } else if(err.message === 'OVERPASS_FAIL'){
-        setStatus(`Place search encountered a temporary issue — please try again in a moment.`, 'error');
-      } else if(err.message === 'NOMINATIM_TIMEOUT'){
-        setStatus(`The place-search service took too long to respond. Please try again.`, 'error');
-      } else if(err.message === 'NOMINATIM_HTTP'){
-        setStatus(`Place-search service returned an error. (${err.detail || ''}) Please try again shortly.`, 'error');
-      } else if(err.message === 'NOMINATIM_BAD_RESPONSE'){
-        setStatus(`Place-search service returned an unreadable response. Please try again.`, 'error');
+        setStatus(`Couldn't find postcode "${postcodeRaw}".`, 'error');
       } else {
-        setStatus(`Something went wrong: ${err.message || err}`, 'error');
+        setStatus(`Something went wrong. Please try again.`, 'error');
       }
       resultsArea.innerHTML = '';
     } finally {
