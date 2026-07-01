@@ -331,10 +331,18 @@
     cursor:pointer;
     transition: all .15s ease;
   }
-  .chip:hover{
+  .chip:hover,
+  .chip.active{
     background: var(--os-green);
     color:var(--paper);
     border-color: var(--os-green);
+  }
+  .chip.active{
+    box-shadow: 0 0 0 3px rgba(27,58,47,0.12);
+  }
+  .chip:disabled{
+    opacity:0.62;
+    cursor:wait;
   }
 
   .hint{
@@ -352,6 +360,7 @@
     padding-left:2px;
   }
   #status.error{ color: var(--postbox-red); font-weight:600; }
+  #status.loading{ color: var(--route-blue); font-weight:600; }
 
   .ledger-head{
     display:flex;
@@ -622,14 +631,31 @@
   let locationRequestId = 0;
   let lastLocationCoords = null; 
 
+  function setActiveChip(activeChip){
+    chips.forEach(chip => chip.classList.toggle('active', chip === activeChip));
+  }
+
+  function setChipsDisabled(disabled){
+    chips.forEach(chip => { chip.disabled = disabled; });
+  }
+
   chips.forEach(chip=>{
-    chip.addEventListener('click', ()=>{
+    chip.addEventListener('click', async ()=>{
       queryInput.value = chip.dataset.query;
-      queryInput.focus();
+      setActiveChip(chip);
+
+      if(!postcodeInput.value.trim()){
+        setStatus('Enter a UK postcode first, then tap a quick search.', 'error');
+        postcodeInput.focus();
+        return;
+      }
+
+      await doSearch();
     });
   });
 
   postcodeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+  queryInput.addEventListener('input', () => setActiveChip(null));
   queryInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
   searchBtn.addEventListener('click', doSearch);
 
@@ -638,6 +664,7 @@
     if(activeController) activeController.abort();
     setStatus('Search stopped.', 'error');
     searchBtn.disabled = false;
+    setChipsDisabled(false);
     stopBtn.hidden = true;
   });
 
@@ -1953,8 +1980,9 @@
     const signal = activeController.signal;
 
     searchBtn.disabled = true;
+    setChipsDisabled(true);
     stopBtn.hidden = false;
-    setStatus('Looking up postcode…', 'loading');
+    setStatus('Searching… looking up postcode…', 'loading');
 
     try{
       const origin = await geocodePostcode(postcodeRaw, signal);
@@ -1985,8 +2013,8 @@
       places = dedupeByLocation(places);
       const expandedNote = queryExpanded !== queryRaw ? ` (searched as: "${queryExpanded}")` : '';
       setStatus(places.length
-        ? `Found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
-        : `No matches found.${expandedNote}`, '');
+        ? `Search complete: found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
+        : `Search complete: no matches found.${expandedNote}`, '');
 
       renderResults(origin, places, queryRaw, queryExpanded);
 
@@ -2000,6 +2028,7 @@
       resultsArea.innerHTML = '';
     } finally {
       searchBtn.disabled = false;
+      setChipsDisabled(false);
       stopBtn.hidden = true;
       activeController = null;
     }
