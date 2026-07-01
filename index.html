@@ -558,6 +558,8 @@
     <div class="quick-chips">
       <button class="chip" data-query="shop">Shops</button>
       <button class="chip" data-query="supermarket">Supermarket</button>
+      <button class="chip" data-query="foodstore">Foodstore</button>
+      <button class="chip" data-query="asian shop">Asian shops</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
@@ -989,7 +991,8 @@
         '["amenity"="marketplace"]',
         '["shop"="mall"]'
       ],
-      terms: ['shop','shops','shopping centre','retail park','supermarket','convenience store','corner shop','chemist','bakery','butcher','greengrocer','newsagent','charity shop','clothes shop','shoe shop','DIY shop','electronics shop','pet shop','bookshop']
+      terms: ['shop','shops','shopping centre','retail park','supermarket','convenience store','corner shop','foodstore','food store','chemist','bakery','butcher','greengrocer','newsagent','charity shop','clothes shop','shoe shop','DIY shop','electronics shop','pet shop','bookshop','Asian shop','halal food shop'],
+      nameTerms: ['Asia','Asian','Continental','Emaan','Halal','World Foods','International Foods']
     },
     {
       id: 'shopping-centre',
@@ -1025,10 +1028,25 @@
     },
     {
       id: 'groceries',
-      label: 'food shops and convenience stores',
-      aliases: ['grocery','groceries','grocery shop','food shop','corner shop','convenience store','mini market','minimarket','supermarket'],
-      filters: ['["shop"~"supermarket|convenience|general|newsagent|greengrocer",i]'],
-      terms: ['supermarket','grocery shop','corner shop','convenience store','mini market','newsagent','greengrocer']
+      label: 'food shops, foodstores and convenience stores',
+      aliases: ['grocery','groceries','grocery shop','food shop','food shops','foodstore','foodstores','food store','food stores','corner shop','convenience store','convenience stores','mini market','minimarket','supermarket','supermarkets','off licence','off-licence'],
+      filters: [
+        '["shop"~"supermarket|convenience|general|newsagent|greengrocer|farm|deli|food|beverages|alcohol|seafood|spices|rice|frozen_food",i]',
+        '["amenity"="marketplace"]'
+      ],
+      terms: ['supermarket','grocery shop','foodstore','food store','corner shop','convenience store','mini market','newsagent','greengrocer','halal food shop','Asian food shop'],
+      nameTerms: ['Foodstore','Food Store','Superstore','Continental','Emaan','Asia','Asian','Halal','World Foods','International Foods']
+    },
+    {
+      id: 'asian-food',
+      label: 'Asian and international food shops',
+      aliases: ['asia','asian','asian shop','asian shops','asian supermarket','asian food','asian food shop','asian foodstore','asian grocery','asian groceries','asian store','continental','continental food','international food','world food','halal','halal shop','halal food shop','pakistani shop','indian shop','middle eastern shop'],
+      filters: [
+        '["shop"~"supermarket|convenience|general|greengrocer|deli|food|beverages|spices|rice|butcher",i]',
+        '["cuisine"~"asian|indian|pakistani|bangladeshi|middle_eastern|halal",i]'
+      ],
+      terms: ['Asia','Asian','Asian food shop','Asian supermarket','continental food shop','halal food shop','international food shop','world foods','Emaan Superstore','Asia Continental'],
+      nameTerms: ['Asia','Asian','Continental','Emaan','Eman','Iman','Halal','Pakistani','Indian','Bangla','Afghan','Middle East','World Foods','International Foods','Superstore']
     },
     {
       id: 'bakery', label: 'bakeries', aliases: ['bakery','baker','bakers'],
@@ -1133,6 +1151,78 @@
     'mosque':['["amenity"="place_of_worship"]["religion"="muslim"]','["building"="mosque"]']
   };
 
+
+  // Small curated rescue list for places that are useful locally but may be missing,
+  // badly tagged, or slow to appear in public OSM/Photon/Nominatim indexes. Coordinates
+  // are resolved from the postcode at run time, not hard-coded.
+  const CURATED_LOCAL_PLACES = [
+    {
+      name: 'Asia Continental',
+      address: '7-9 Sedgwick Street, Preston PR1 1TP',
+      postcode: 'PR1 1TP',
+      category: 'asian food shop',
+      keywords: ['asia','asian','continental','foodstore','food store','supermarket','shop','grocery','halal','international food']
+    },
+    {
+      name: 'Emaan Superstore',
+      address: '180 Skeffington Road, Preston PR1 6RX',
+      postcode: 'PR1 6RX',
+      category: 'asian food shop',
+      keywords: ['emaan','eman','imaan','superstore','asia','asian','foodstore','food store','supermarket','shop','grocery','halal','international food']
+    }
+  ];
+
+  const curatedPostcodeCache = new Map();
+
+  function queryMatchesCuratedPlace(queryRaw, intent, place){
+    const normalised = normaliseIntentText(queryRaw);
+    const haystack = [place.name, place.address, place.category, ...(place.keywords || [])].join(' ').toLowerCase();
+    if(normalised && haystack.includes(normalised)) return true;
+
+    const queryWords = normalised.split(/\s+/).filter(Boolean);
+    if(queryWords.some(word => word.length >= 4 && haystack.includes(word))) return true;
+
+    const intentWords = [intent.label, ...(intent.terms || []), ...(intent.nameTerms || [])].join(' ').toLowerCase();
+    return (place.keywords || []).some(keyword => intentWords.includes(keyword));
+  }
+
+  async function searchCuratedLocalPlaces(lat, lon, queryRaw, intent, radiusMeters, externalSignal){
+    const candidates = CURATED_LOCAL_PLACES.filter(place => queryMatchesCuratedPlace(queryRaw, intent, place));
+    if(!candidates.length) return [];
+
+    const results = [];
+    for(const place of candidates){
+      if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+      try{
+        let coords = curatedPostcodeCache.get(place.postcode);
+        if(!coords){
+          const pc = encodeURIComponent(place.postcode);
+          const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal: externalSignal });
+          if(!res.ok) continue;
+          const data = await res.json();
+          if(!data.result) continue;
+          coords = { lat: data.result.latitude, lon: data.result.longitude };
+          curatedPostcodeCache.set(place.postcode, coords);
+        }
+        const dist = haversineMeters(lat, lon, coords.lat, coords.lon);
+        if(dist <= radiusMeters){
+          results.push({
+            name: place.name,
+            lat: coords.lat,
+            lon: coords.lon,
+            address: place.address,
+            postcode: place.postcode,
+            category: place.category,
+            source: 'curated-local'
+          });
+        }
+      } catch(err){
+        if(externalSignal && externalSignal.aborted) throw err;
+      }
+    }
+    return results;
+  }
+
   function normaliseIntentText(value){
     return value.toLowerCase()
       .replace(/[’']/g, "'")
@@ -1161,19 +1251,21 @@
         label: normalised,
         filters: SIMPLE_CATEGORY_MAP[normalised],
         terms: [normalised],
+        nameTerms: [],
         recognised: true,
         resultLimit: 100
       };
     }
 
     if(!matches.length){
-      return { label: queryRaw.trim(), filters: [], terms: [queryRaw.trim()], recognised: false, resultLimit: 50 };
+      return { label: queryRaw.trim(), filters: [], terms: [queryRaw.trim()], nameTerms: [], recognised: false, resultLimit: 50 };
     }
 
     return {
       label: matches.map(m => m.label).join(', '),
       filters: [...new Set(matches.flatMap(m => m.filters))],
-      terms: [...new Set([queryRaw.trim(), ...matches.flatMap(m => m.terms)])].slice(0, 18),
+      terms: [...new Set([queryRaw.trim(), ...matches.flatMap(m => m.terms)])].slice(0, 24),
+      nameTerms: [...new Set(matches.flatMap(m => m.nameTerms || []))],
       recognised: true,
       resultLimit: matches.some(m => m.id === 'general-retail') ? 200 : 100
     };
@@ -1349,7 +1441,7 @@
   }
 
   const GENERIC_CATEGORY_WORDS = new Set([
-    'pharmacy','pharmacies','chemist','chemists','shop','shops','store','stores',
+    'pharmacy','pharmacies','chemist','chemists','shop','shops','store','stores','foodstore','foodstores','food','grocery','groceries',
     'restaurant','restaurants','cafe','cafes','coffee','supermarket','supermarkets',
     'doctor','doctors','dentist','dentists','hospital','hospitals','clinic','clinics',
     'bank','banks','school','schools','hotel','hotels','gym','gyms','salon','salons',
@@ -1389,13 +1481,14 @@
     if(!pattern) return [];
     const around = `(around:${radiusMeters},${lat},${lon})`;
     const ql = `
-      [out:json][timeout:10];
+      [out:json][timeout:15];
       (
         nwr["name"~"${pattern}",i]${around};
         nwr["brand"~"${pattern}",i]${around};
         nwr["operator"~"${pattern}",i]${around};
+        nwr["alt_name"~"${pattern}",i]${around};
       );
-      out center 25;
+      out center tags 100;
     `;
 
     try{
@@ -1477,7 +1570,7 @@
       lat, lon,
       address: addrParts.join(', '),
       postcode: tags['addr:postcode'] || null,
-      category: tags.shop || tags.amenity || tags.healthcare || tags.leisure || tags.railway || null,
+      category: tags.shop || tags.amenity || tags.healthcare || tags.leisure || tags.railway || tags.cuisine || null,
       source: 'overpass',
       osmType: el.type,
       osmId: el.id
@@ -1661,15 +1754,24 @@
     }
 
     const nameToken = extractNameToken(queryRaw);
-    if(radiusMeters <= 15000 && (!intent.recognised || nameToken)){
-      const overpassTerms = [...new Set([queryRaw, nameToken].filter(Boolean))];
-      fallbackTasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
+    if(radiusMeters <= 20000){
+      const overpassTerms = [...new Set([queryRaw, nameToken, ...(intent.nameTerms || [])].filter(Boolean))];
+      if(overpassTerms.length){
+        fallbackTasks.push(searchOverpassByName(lat, lon, overpassTerms, radiusMeters, signal));
+      }
     }
 
     const settled = await Promise.allSettled(fallbackTasks);
     for(const result of settled){
       if(result.status === 'fulfilled') combined.push(...result.value);
     }
+
+    try{
+      combined.push(...await searchCuratedLocalPlaces(lat, lon, queryRaw, intent, radiusMeters, signal));
+    } catch(err){
+      if(signal && signal.aborted) throw err;
+    }
+
     return combined;
   }
 
