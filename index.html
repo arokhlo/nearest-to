@@ -556,14 +556,20 @@
     </div>
 
     <div class="quick-chips">
+      <button class="chip" data-query="shop">Shops</button>
       <button class="chip" data-query="supermarket">Supermarket</button>
       <button class="chip" data-query="foodstore">Foodstore</button>
       <button class="chip" data-query="asian shop">Asian shops</button>
       <button class="chip" data-query="halal food shop">Halal food</button>
       <button class="chip" data-query="international food shop">International food</button>
       <button class="chip" data-query="charity">Charities</button>
+      <button class="chip" data-query="Community Gateway">Community Gateway</button>
       <button class="chip" data-query="chemist">Chemist / Pharmacy</button>
       <button class="chip" data-query="train station">Train station</button>
+      <button class="chip" data-query="rail station">Rail station</button>
+      <button class="chip" data-query="Barking Station">Barking Station</button>
+      <button class="chip" data-query="park">Park</button>
+      <button class="chip" data-query="Barking Park">Barking Park</button>
       <button class="chip" data-query="GP surgery">GP surgery</button>
       <button class="chip" data-query="post office">Post office</button>
       <button class="chip" data-query="bus stop">Bus stop</button>
@@ -1138,6 +1144,17 @@
       terms: ['train station','railway station','rail station','National Rail station','Overground station','Underground station','Tube station']
     },
     {
+      id: 'parks',
+      label: 'parks and public green spaces',
+      aliases: ['park','parks','public park','public parks','green space','green spaces','recreation ground','playing field','barking park'],
+      filters: [
+        '["leisure"~"park|recreation_ground|garden|playground|nature_reserve",i]',
+        '["landuse"~"recreation_ground|grass|village_green",i]',
+        '["boundary"="protected_area"]'
+      ],
+      terms: ['park','public park','recreation ground','green space','playing field','Barking Park']
+    },
+    {
       id: 'transport-bus', label: 'bus stops and stations', aliases: ['bus stop','bus stops','bus station','coach station'],
       filters: ['["highway"="bus_stop"]','["amenity"="bus_station"]','["public_transport"="platform"]["bus"="yes"]'], terms: ['bus stop','bus station','coach station']
     },
@@ -1178,7 +1195,7 @@
   const SIMPLE_CATEGORY_MAP = {
     'college':['["amenity"="college"]'], 'university':['["amenity"="university"]'],
     'school':['["amenity"="school"]'], 'library':['["amenity"="library"]'],
-    'park':['["leisure"="park"]'], 'gym':['["leisure"="fitness_centre"]','["leisure"="sports_centre"]'],
+    'park':['["leisure"~"park|recreation_ground|garden|playground|nature_reserve",i]','["landuse"~"recreation_ground|grass|village_green",i]'], 'gym':['["leisure"="fitness_centre"]','["leisure"="sports_centre"]'],
     'cinema':['["amenity"="cinema"]'], 'restaurant':['["amenity"="restaurant"]'],
     'cafe':['["amenity"="cafe"]'], 'coffee shop':['["amenity"="cafe"]'],
     'pub':['["amenity"="pub"]'], 'bank':['["amenity"="bank"]'],
@@ -1187,7 +1204,8 @@
     'charity':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]'],
     'charities':['["shop"="charity"]','["office"~"charity|ngo|association|foundation",i]','["amenity"="community_centre"]','["amenity"="social_facility"]'],
     'station':['["railway"~"station|halt",i]','["public_transport"="station"]'],
-    'rail station':['["railway"~"station|halt",i]','["public_transport"="station"]']
+    'rail station':['["railway"~"station|halt",i]','["public_transport"="station"]'],
+    'barking park':['["leisure"~"park|recreation_ground|garden|playground|nature_reserve",i]','["landuse"~"recreation_ground|grass|village_green",i]']
   };
 
 
@@ -1264,6 +1282,13 @@
       postcode: 'IG11 8TU',
       category: 'railway station',
       keywords: ['barking station','barking','train station','rail station','railway station','station','national rail','overground station','underground station','tube station','transport']
+    },
+    {
+      name: 'Barking Park',
+      address: 'Barking IG11 8TA',
+      postcode: 'IG11 8TA',
+      category: 'public park',
+      keywords: ['barking park','barking','park','parks','public park','green space','green spaces','recreation ground','playing field','leisure','outdoor']
     }
   ];
 
