@@ -629,7 +629,11 @@
   let searchCancelled = false;
   let lastResolvedAddress = '';
   let locationRequestId = 0;
-  let lastLocationCoords = null; 
+  let lastLocationCoords = null;
+  let postcodeLookupTimer = null;
+  let postcodeLookupController = null;
+  let postcodeLookupRequestId = 0;
+  let resolvedPostcodeCache = null;
 
   function setActiveChip(activeChip){
     chips.forEach(chip => chip.classList.toggle('active', chip === activeChip));
@@ -654,6 +658,8 @@
     });
   });
 
+  postcodeInput.addEventListener('input', schedulePostcodePreview);
+  postcodeInput.addEventListener('blur', () => resolvePostcodePreview({ immediate: true }));
   postcodeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
   queryInput.addEventListener('input', () => setActiveChip(null));
   queryInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
@@ -676,6 +682,117 @@
     const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
     currentAddressTextEl.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="current-address-link" title="View on Google Maps">${escapeHTML(line)}</a>`;
     currentAddressEl.hidden = false;
+  }
+
+  function normalisePostcodeKey(value){
+    return value.replace(/\s+/g, '').toUpperCase();
+  }
+
+  function looksLikeUkPostcode(value){
+    const compact = normalisePostcodeKey(value);
+    return /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test(compact);
+  }
+
+  function setSelectedLocationMessage(html){
+    currentAddressTextEl.innerHTML = html;
+    currentAddressEl.hidden = false;
+  }
+
+  function schedulePostcodePreview(){
+    resolvedPostcodeCache = null;
+    if(postcodeLookupTimer) clearTimeout(postcodeLookupTimer);
+
+    const raw = postcodeInput.value.trim();
+    if(!raw){
+      currentAddressEl.hidden = true;
+      currentAddressTextEl.textContent = '';
+      lastResolvedAddress = '';
+      return;
+    }
+
+    if(!looksLikeUkPostcode(raw)){
+      if(raw.replace(/\s+/g, '').length >= 5){
+        setSelectedLocationMessage('Selected location: checking postcode…');
+      } else {
+        currentAddressEl.hidden = true;
+      }
+      return;
+    }
+
+    setSelectedLocationMessage('Selected location: looking up postcode…');
+    postcodeLookupTimer = setTimeout(() => resolvePostcodePreview(), 550);
+  }
+
+  async function resolvePostcodePreview(options = {}){
+    const raw = postcodeInput.value.trim();
+    if(!raw || !looksLikeUkPostcode(raw)) return null;
+
+    const key = normalisePostcodeKey(raw);
+    if(resolvedPostcodeCache && resolvedPostcodeCache.key === key){
+      return resolvedPostcodeCache.origin;
+    }
+
+    if(postcodeLookupTimer){
+      clearTimeout(postcodeLookupTimer);
+      postcodeLookupTimer = null;
+    }
+    if(postcodeLookupController){
+      postcodeLookupController.abort();
+    }
+
+    const requestId = ++postcodeLookupRequestId;
+    postcodeLookupController = new AbortController();
+    const signal = postcodeLookupController.signal;
+
+    setSelectedLocationMessage('Selected location: looking up postcode…');
+
+    try{
+      const origin = await geocodePostcode(raw, signal);
+      if(requestId !== postcodeLookupRequestId) return null;
+
+      resolvedPostcodeCache = { key, origin };
+      lastLocationCoords = { lat: origin.lat, lon: origin.lon };
+
+      let line = origin.label;
+      try{
+        const addressResult = await reverseGeocodeToAddress(origin.lat, origin.lon);
+        if(requestId !== postcodeLookupRequestId) return null;
+        const readable = buildCurrentAddressLine(addressResult, null, origin.label);
+        if(readable) line = readable;
+      } catch(addressErr){
+        // Postcode is still valid; the reverse address is only a helpful display.
+      }
+
+      const mapsUrl = `https://www.google.com/maps?q=${origin.lat},${origin.lon}`;
+      lastResolvedAddress = line;
+      currentAddressTextEl.innerHTML = `<strong>Selected location:</strong> <a href="${mapsUrl}" target="_blank" rel="noopener" class="current-address-link" title="View on Google Maps">${escapeHTML(line)}</a>`;
+      currentAddressEl.hidden = false;
+      return origin;
+    } catch(err){
+      if(err.name === 'AbortError') return null;
+      if(requestId !== postcodeLookupRequestId) return null;
+      resolvedPostcodeCache = null;
+      if(err.message === 'NOTFOUND'){
+        setSelectedLocationMessage('<strong>Selected location:</strong> postcode not recognised');
+      } else {
+        setSelectedLocationMessage('<strong>Selected location:</strong> postcode lookup failed');
+      }
+      return null;
+    } finally {
+      if(requestId === postcodeLookupRequestId){
+        postcodeLookupController = null;
+      }
+    }
+  }
+
+  async function getOriginForPostcode(raw, signal){
+    const key = normalisePostcodeKey(raw);
+    if(resolvedPostcodeCache && resolvedPostcodeCache.key === key){
+      return resolvedPostcodeCache.origin;
+    }
+    const origin = await geocodePostcode(raw, signal);
+    resolvedPostcodeCache = { key, origin };
+    return origin;
   }
 
   function setStatus(msg, type){
@@ -933,6 +1050,7 @@
           if(postcodeResult.status === 'fulfilled'){
             const postcode = postcodeResult.value;
             postcodeInput.value = postcode;
+            resolvedPostcodeCache = { key: normalisePostcodeKey(postcode), origin: { lat: latitude, lon: longitude, label: postcode } };
             setStatus(`Set postcode to ${postcode} from your current location.`, '');
             queryInput.focus();
 
@@ -1985,7 +2103,7 @@
     setStatus('Searching… looking up postcode…', 'loading');
 
     try{
-      const origin = await geocodePostcode(postcodeRaw, signal);
+      const origin = await getOriginForPostcode(postcodeRaw, signal);
 
       if(isQiblaQuery(queryRaw)){
         renderQiblaDirection(origin);
