@@ -1464,16 +1464,38 @@
 
   const curatedPostcodeCache = new Map();
 
+  // Words that are too generic or too common across curated entries (place names,
+  // shared boilerplate like "shop"/"centre", etc.) to be trusted as a standalone
+  // match signal. Without this list, e.g. searching "dentist in Preston" would drag
+  // in every Preston-based curated food shop and charity, because "preston" and
+  // "shop"-like words sit in nearly all of their keyword lists.
+  const CURATED_MATCH_STOPWORDS = new Set([
+    'preston','barking','ashton','ashton-on-ribble','lytham','ig11','pr1','pr2',
+    'shop','shops','store','stores','foodstore','foodstores','food','centre','center',
+    'grocery','groceries','supermarket','supermarkets','international','local',
+    'organisation','organisations','organization','organizations','support','general'
+  ]);
+
   function queryMatchesCuratedPlace(queryRaw, intent, place){
     const normalised = normaliseIntentText(queryRaw);
-    const haystack = [place.name, place.address, place.category, ...(place.keywords || [])].join(' ').toLowerCase();
-    if(normalised && haystack.includes(normalised)) return true;
+    const nameAndCategory = `${place.name} ${place.category || ''}`.toLowerCase();
+    if(normalised && nameAndCategory.includes(normalised)) return true;
 
     const queryWords = normalised.split(/\s+/).filter(Boolean);
-    if(queryWords.some(word => word.length >= 4 && haystack.includes(word))) return true;
+    const keywordSet = new Set((place.keywords || []).map(k => k.toLowerCase()));
 
-    const intentWords = [intent.label, ...(intent.terms || []), ...(intent.nameTerms || [])].join(' ').toLowerCase();
-    return (place.keywords || []).some(keyword => intentWords.includes(keyword));
+    // Require an exact match against this place's own keywords (not "does this
+    // word merely appear somewhere in the name+address+category+keywords blob"),
+    // and ignore generic/location stopwords so they can't single-handedly trigger
+    // a match on their own.
+    const significant = queryWords.filter(w => w.length >= 4 && !CURATED_MATCH_STOPWORDS.has(w));
+    if(significant.some(word => keywordSet.has(word))) return true;
+
+    const intentWords = new Set(
+      [intent.label, ...(intent.terms || []), ...(intent.nameTerms || [])]
+        .join(' ').toLowerCase().split(/\s+/).filter(Boolean)
+    );
+    return (place.keywords || []).some(keyword => intentWords.has(keyword.toLowerCase()));
   }
 
   async function searchCuratedLocalPlaces(lat, lon, queryRaw, intent, radiusMeters, externalSignal){
