@@ -455,29 +455,38 @@
   .copy-addr-btn{
     display:inline-flex;
     align-items:center;
-    margin-left:8px;
-    padding:2px 7px;
-    font-family:'Inter', sans-serif;
-    font-size:11px;
-    font-weight:600;
-    line-height:1.3;
+    justify-content:center;
+    width:22px;
+    height:22px;
+    margin-left:6px;
+    padding:0;
     color:var(--route-blue);
-    background:#fff;
-    border:1px solid var(--route-blue);
-    border-radius:4px;
+    background:rgba(26,95,180,0.07);
+    border:1px solid rgba(26,95,180,0.28);
+    border-radius:50%;
     cursor:pointer;
     vertical-align:middle;
-    transition:background .15s ease, color .15s ease, border-color .15s ease;
+    box-shadow:0 1px 2px rgba(27,58,47,0.08);
+    transition:transform .12s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .copy-addr-btn svg{
+    width:12px;
+    height:12px;
+    pointer-events:none;
   }
   .copy-addr-btn:hover{
     background:var(--route-blue);
     color:#fff;
+    border-color:var(--route-blue);
+    transform:translateY(-1px);
   }
+  .copy-addr-btn:active{ transform:scale(.92); }
   .copy-addr-btn:disabled{
     cursor:default;
     background:var(--os-green);
     color:#fff;
     border-color:var(--os-green);
+    transform:none;
   }
 
   .route-toggle-btn{
@@ -2015,11 +2024,12 @@
         `saddr=${encodeURIComponent(origin.label)}` +
         `&daddr=${p.lat},${p.lon}` +
         `&dirflg=w&output=embed`;
-      const addrLine = p.address
-        ? `<a href="${directionsURL}" target="_blank" rel="noopener" title="Walking directions from ${escapeHTML(origin.label)}">${escapeHTML(p.address)}&nbsp;↗</a>`
+      const fullAddress = buildFullPlaceAddress(p);
+      const addrLine = fullAddress
+        ? `<a href="${directionsURL}" target="_blank" rel="noopener" title="Walking directions from ${escapeHTML(origin.label)}">${escapeHTML(fullAddress)}&nbsp;↗</a>`
         : `<a href="${directionsURL}" target="_blank" rel="noopener" title="Walking directions">Get walking directions&nbsp;↗</a>`;
-      const copyAddressButton = p.address
-        ? `<button type="button" class="copy-addr-btn" data-address="${encodeURIComponent(p.address)}" onclick="window.__copyResultAddress(this)" title="Copy full address" aria-label="Copy full address">CpyAddr</button>`
+      const copyAddressButton = fullAddress
+        ? `<button type="button" class="copy-addr-btn" data-address="${encodeURIComponent(fullAddress)}" onclick="window.__copyResultAddress(this)" title="Copy full address" aria-label="Copy full address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V5.8A1.8 1.8 0 0 1 9.8 4h8.4A1.8 1.8 0 0 1 20 5.8v8.4a1.8 1.8 0 0 1-1.8 1.8H16" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`
         : '';
       const mapId = `route-map-${idx}`;
       return `
@@ -2047,20 +2057,53 @@
     `;
   }
 
+
+  function buildFullPlaceAddress(place){
+    if(!place) return '';
+
+    const name = String(place.name || '').trim();
+    let address = String(place.address || '').trim();
+    const postcode = String(place.postcode || '').trim().toUpperCase();
+
+    // Add a missing postcode and keep UK-style address parts comma-separated.
+    if(postcode && !address.toUpperCase().includes(postcode)){
+      address = address ? `${address}, ${postcode}` : postcode;
+    }
+    address = address
+      .replace(/\s*,\s*/g, ', ')
+      .replace(/,\s*,+/g, ', ')
+      .replace(/\s+/g, ' ')
+      .replace(/^,\s*|,\s*$/g, '')
+      .trim();
+
+    // Do not repeat the title when the provider already included it.
+    if(name && address && !address.toLowerCase().startsWith(name.toLowerCase())){
+      return `${name}, ${address}`;
+    }
+    return address || name;
+  }
+
   window.__copyResultAddress = async function(btn){
     const encodedAddress = btn.getAttribute('data-address') || '';
     const address = decodeURIComponent(encodedAddress);
     if(!address) return;
 
-    const originalText = btn.textContent;
-    try{
-      await navigator.clipboard.writeText(address);
-      btn.textContent = 'Copied';
+    const originalHTML = btn.innerHTML;
+    const showCopied = ()=>{
+      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      btn.title = 'Copied';
+      btn.setAttribute('aria-label', 'Copied');
       btn.disabled = true;
       setTimeout(()=>{
-        btn.textContent = originalText;
+        btn.innerHTML = originalHTML;
+        btn.title = 'Copy full address';
+        btn.setAttribute('aria-label', 'Copy full address');
         btn.disabled = false;
       }, 1200);
+    };
+    try{
+      await navigator.clipboard.writeText(address);
+      showCopied();
     } catch(err){
       const temp = document.createElement('textarea');
       temp.value = address;
@@ -2073,12 +2116,7 @@
       document.body.removeChild(temp);
 
       if(copied){
-        btn.textContent = 'Copied';
-        btn.disabled = true;
-        setTimeout(()=>{
-          btn.textContent = originalText;
-          btn.disabled = false;
-        }, 1200);
+        showCopied();
       } else {
         alert('Unable to copy address.');
       }
