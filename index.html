@@ -952,6 +952,48 @@
     }
   }
 
+
+  .result-main .website-link{
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    margin-left:7px;
+    padding:2px 7px;
+    color:var(--route-blue);
+    background:rgba(26,95,180,.07);
+    border:1px solid rgba(26,95,180,.22);
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:600;
+    line-height:1.35;
+    text-decoration:none;
+    vertical-align:middle;
+    white-space:nowrap;
+    transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease;
+  }
+  .result-main .website-link:hover{
+    color:#fff;
+    background:var(--route-blue);
+    border-color:var(--route-blue);
+    transform:translateY(-1px);
+  }
+  .result-main .website-link:focus-visible{
+    box-shadow:var(--focus-ring);
+  }
+  .result-main .website-link svg{
+    width:10px;
+    height:10px;
+    flex:0 0 auto;
+  }
+
+  @media (max-width:620px){
+    .result-main .website-link{
+      margin-left:5px;
+      padding:2px 6px;
+      font-size:10px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1993,6 +2035,7 @@ Helping local businesses grow with free website design, flyer design and custom 
             address: place.address,
             postcode: place.postcode,
             category: place.category,
+            website: place.website || null,
             source: 'curated-local'
           });
         }
@@ -2097,7 +2140,7 @@ Helping local businesses grow with free website design, flyer design and custom 
           p.city || p.town || p.village,
           p.postcode
         ].filter(Boolean);
-        return { name, lat: flat, lon: flon, address: addrParts.join(', '), postcode: p.postcode || null, category: p.osm_value || p.type || null, providerClass: p.osm_key || null, providerType: p.osm_value || p.type || null, source: 'photon' };
+        return { name, lat: flat, lon: flon, address: addrParts.join(', '), postcode: p.postcode || null, category: p.osm_value || p.type || null, providerClass: p.osm_key || null, providerType: p.osm_value || p.type || null, website: p.website || p['contact:website'] || p.url || p['contact:url'] || null, source: 'photon' };
       }).filter(Boolean);
     } catch(err){
       clearTimeout(timeoutId);
@@ -2158,6 +2201,7 @@ Helping local businesses grow with free website design, flyer design and custom 
       limit: options.limit || '35',
       addressdetails: '1',
       namedetails: '1',
+      extratags: '1',
       countrycodes: 'gb',
       dedupe: '1'
     });
@@ -2190,6 +2234,9 @@ Helping local businesses grow with free website design, flyer design and custom 
         category: item.type || item.category || null,
         providerClass: item.category || null,
         providerType: item.type || null,
+        website: item.extratags
+          ? (item.extratags.website || item.extratags['contact:website'] || item.extratags.url || item.extratags['contact:url'] || null)
+          : null,
         source: 'nominatim'
       })).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
 
@@ -2364,6 +2411,7 @@ Helping local businesses grow with free website design, flyer design and custom 
       address: addrParts.join(', '),
       postcode: tags['addr:postcode'] || null,
       category: tags.shop || tags.amenity || tags.healthcare || tags.leisure || tags.railway || tags.cuisine || null,
+      website: tags.website || tags['contact:website'] || tags.url || tags['contact:url'] || null,
       source: 'overpass',
       osmType: el.type,
       osmId: el.id,
@@ -2434,6 +2482,43 @@ Helping local businesses grow with free website design, flyer design and custom 
       </ul>`;
   }
 
+
+  function normaliseWebsiteUrl(value){
+    if(!value) return null;
+
+    let raw = String(value).trim();
+    if(!raw) return null;
+
+    // Some OSM records contain more than one URL separated by punctuation.
+    raw = raw.split(/[;,|\s]+/).find(part => /[A-Za-z0-9]/.test(part)) || raw;
+
+    if(!/^https?:\/\//i.test(raw)){
+      raw = `https://${raw.replace(/^\/+/, '')}`;
+    }
+
+    try{
+      const parsed = new URL(raw);
+      if(!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if(!parsed.hostname || !parsed.hostname.includes('.')) return null;
+      return parsed.href;
+    } catch(err){
+      return null;
+    }
+  }
+
+  function websiteLinkHTML(place){
+    const website = normaliseWebsiteUrl(place && place.website);
+    if(!website) return '';
+
+    return `<a class="website-link" href="${escapeHTML(website)}" target="_blank" rel="noopener noreferrer" title="Open ${escapeHTML(place.name || 'this place')} website" aria-label="Open ${escapeHTML(place.name || 'this place')} website">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M3.5 12h17M12 3c2.4 2.5 3.6 5.5 3.6 9S14.4 18.5 12 21M12 3C9.6 5.5 8.4 8.5 8.4 12S9.6 18.5 12 21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      Website
+    </a>`;
+  }
+
   function renderResults(origin, places, queryRaw, queryExpanded){
     const intent = analyseIntent(queryRaw);
     if(!places.length){
@@ -2480,7 +2565,7 @@ Helping local businesses grow with free website design, flyer design and custom 
         <li class="result">
           ${compassSVG(p.brg)}
           <div class="result-main">
-            <p class="name"><a href="${directionsURL}" target="_blank" rel="noopener" class="name-link">${escapeHTML(p.name)}</a></p>
+            <p class="name"><a href="${directionsURL}" target="_blank" rel="noopener" class="name-link">${escapeHTML(p.name)}</a>${websiteLinkHTML(p)}</p>
             <p class="addr">${addrLine}${copyAddressButton}${p.category ? ` · ${escapeHTML(p.category.replace(/_/g, ' '))}` : ''}</p>
             <button type="button" class="route-toggle-btn" data-map-id="${mapId}" data-embed-url="${escapeHTML(embedURL)}" onclick="window.__toggleRouteMap(this)">🚶 Show walking route on map</button>
             <div class="route-map-frame" id="${mapId}" hidden></div>
