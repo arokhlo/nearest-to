@@ -994,6 +994,70 @@
     }
   }
 
+
+  /* Enhanced current-location control */
+  .locate-btn{
+    isolation:isolate;
+    overflow:visible;
+    background:#fff;
+    color:var(--route-blue);
+    border:2px solid rgba(26,95,180,.58);
+    box-shadow:0 0 0 3px rgba(26,95,180,.08),0 3px 10px rgba(26,95,180,.18);
+  }
+  .locate-btn::before{
+    content:"";
+    position:absolute;
+    inset:-5px;
+    z-index:-1;
+    border-radius:50%;
+    border:2px solid rgba(26,95,180,.28);
+    animation:location-ring 2.2s ease-out infinite;
+    pointer-events:none;
+  }
+  .locate-btn::after{
+    content:"";
+    position:absolute;
+    inset:3px;
+    border-radius:50%;
+    border:2px solid transparent;
+    border-top-color:rgba(26,95,180,.78);
+    animation:location-spin 3.2s linear infinite;
+    pointer-events:none;
+  }
+  .locate-btn:hover{
+    background:var(--route-blue);
+    color:#fff;
+    border-color:var(--route-blue);
+    transform:translateY(-50%) scale(1.06);
+    box-shadow:0 0 0 4px rgba(26,95,180,.14),0 5px 14px rgba(26,95,180,.28);
+  }
+  .locate-btn.locating{
+    background:var(--os-green);
+    color:#fff;
+    border-color:var(--os-green);
+    animation:none;
+  }
+  .locate-btn.locating::after{
+    border-top-color:#fff;
+    border-right-color:rgba(255,255,255,.45);
+    animation:location-spin .8s linear infinite;
+  }
+  .locate-btn.location-ready{
+    background:var(--os-green);
+    color:#fff;
+    border-color:var(--os-green);
+  }
+  .locate-btn.location-ready::before{animation:none;border-color:rgba(27,58,47,.28);}
+  .locate-btn.location-ready::after{display:none;}
+  @keyframes location-ring{
+    0%{transform:scale(.84);opacity:.72;}
+    70%,100%{transform:scale(1.18);opacity:0;}
+  }
+  @keyframes location-spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){
+    .locate-btn::before,.locate-btn::after{animation:none!important;}
+  }
+
 </style>
 </head>
 <body>
@@ -1073,8 +1137,6 @@
   </div>
 
   <footer>
-Postcode lookup via <a href="https://postcodes.io" target="_blank" rel="noopener">postcodes.io</a> · Place data via <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
-
 <div class="business-card">
 <strong>Prepared by Dr Mortaza Arokhlo</strong><br>
 <a class="email" href="mailto:arokhlo687@gmail.com">✉ arokhlo687@gmail.com</a><br>
@@ -1774,15 +1836,17 @@ Helping local businesses grow with free website design, flyer design and custom 
       label: 'railway stations',
       aliases: [
         'train station','train stations','railway station','railway stations','rail station','rail stations',
-        'station','stations','national rail','national rail station','overground station','underground station','tube station'
+        'national rail','national rail station','mainline station','railway halt','train halt'
       ],
       filters: [
         '["railway"~"station|halt",i]',
-        '["public_transport"="station"]',
-        '["station"~"train|rail|subway|light_rail",i]',
-        '["railway"="subway_entrance"]'
+        '["public_transport"="station"]["train"!="no"]',
+        '["station"~"train|rail",i]'
       ],
-      terms: ['train station','railway station','rail station','National Rail station','Overground station','Underground station','Tube station']
+      terms: [
+        'train station','railway station','rail station','National Rail station',
+        'mainline railway station','railway halt'
+      ]
     },
     {
       id: 'parks',
@@ -2057,6 +2121,47 @@ Helping local businesses grow with free website design, flyer design and custom 
       .trim();
   }
 
+
+  const SEMANTIC_SEARCH_LIMITS = {
+    maxCoreVariants: 12,
+    maxLocalVariants: 8
+  };
+
+  function isUsefulSemanticPhrase(value){
+    const phrase = normaliseIntentText(value);
+    if(!phrase || phrase.length < 3) return false;
+    if(['station','shop','service','place','business','amenity'].includes(phrase)) return false;
+    return true;
+  }
+
+  function websiteFromTags(tags){
+    if(!tags) return null;
+    return tags.website ||
+      tags['contact:website'] ||
+      tags['official_website'] ||
+      tags['operator:website'] ||
+      tags['network:website'] ||
+      tags['brand:website'] ||
+      tags.url ||
+      tags['contact:url'] ||
+      null;
+  }
+
+  function nationalRailWebsiteFromTags(tags){
+    if(!tags) return null;
+    const railwayType = String(tags.railway || '').toLowerCase();
+    const publicTransport = String(tags.public_transport || '').toLowerCase();
+    const isRailStation = ['station','halt'].includes(railwayType) ||
+      (publicTransport === 'station' && String(tags.train || '').toLowerCase() !== 'no');
+    const crs = String(tags['ref:crs'] || tags['railway:ref'] || '').trim().toUpperCase();
+    if(!isRailStation || !/^[A-Z]{3}$/.test(crs)) return null;
+    return `https://railmap.nationalrail.co.uk/backend/public/station/${encodeURIComponent(crs)}`;
+  }
+
+  function bestWebsiteFromTags(tags){
+    return websiteFromTags(tags) || nationalRailWebsiteFromTags(tags);
+  }
+
   function phraseMatches(text, alias){
     if(text === alias) return true;
     const words = alias.split(/\s+/);
@@ -2140,7 +2245,7 @@ Helping local businesses grow with free website design, flyer design and custom 
           p.city || p.town || p.village,
           p.postcode
         ].filter(Boolean);
-        return { name, lat: flat, lon: flon, address: addrParts.join(', '), postcode: p.postcode || null, category: p.osm_value || p.type || null, providerClass: p.osm_key || null, providerType: p.osm_value || p.type || null, website: p.website || p['contact:website'] || p.url || p['contact:url'] || null, source: 'photon' };
+        return { name, lat: flat, lon: flon, address: addrParts.join(', '), postcode: p.postcode || null, category: p.osm_value || p.type || null, providerClass: p.osm_key || null, providerType: p.osm_value || p.type || null, website: p.website || p['contact:website'] || p.official_website || p['operator:website'] || p['network:website'] || p['brand:website'] || p.url || p['contact:url'] || null, source: 'photon' };
       }).filter(Boolean);
     } catch(err){
       clearTimeout(timeoutId);
@@ -2234,9 +2339,10 @@ Helping local businesses grow with free website design, flyer design and custom 
         category: item.type || item.category || null,
         providerClass: item.category || null,
         providerType: item.type || null,
-        website: item.extratags
-          ? (item.extratags.website || item.extratags['contact:website'] || item.extratags.url || item.extratags['contact:url'] || null)
-          : null,
+        website: item.extratags ? bestWebsiteFromTags(item.extratags) : null,
+        osmType: item.osm_type || null,
+        osmId: item.osm_id || null,
+        tags: item.extratags || {},
         source: 'nominatim'
       })).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
 
@@ -2410,8 +2516,8 @@ Helping local businesses grow with free website design, flyer design and custom 
       lat, lon,
       address: addrParts.join(', '),
       postcode: tags['addr:postcode'] || null,
-      category: tags.shop || tags.amenity || tags.healthcare || tags.leisure || tags.railway || tags.cuisine || null,
-      website: tags.website || tags['contact:website'] || tags.url || tags['contact:url'] || null,
+      category: tags.shop || tags.amenity || tags.healthcare || tags.leisure || tags.railway || tags.public_transport || tags.cuisine || null,
+      website: bestWebsiteFromTags(tags),
       source: 'overpass',
       osmType: el.type,
       osmId: el.id,
@@ -2426,19 +2532,44 @@ Helping local businesses grow with free website design, flyer design and custom 
   }
 
   function dedupeByLocation(places){
-    const seenIds = new Set();
-    const seenFallback = new Set();
-    return places.filter(p=>{
-      if(p.osmType && p.osmId){
-        const idKey = `${p.osmType}:${p.osmId}`;
-        if(seenIds.has(idKey)) return false;
-        seenIds.add(idKey);
+    const merged = [];
+    const byId = new Map();
+    const byFallback = new Map();
+
+    const mergePlace = (target, incoming) => {
+      if(!target.website && incoming.website) target.website = incoming.website;
+      if((!target.address || target.address.length < 6) && incoming.address) target.address = incoming.address;
+      if(!target.postcode && incoming.postcode) target.postcode = incoming.postcode;
+      if(!target.category && incoming.category) target.category = incoming.category;
+      if(!target.osmType && incoming.osmType) target.osmType = incoming.osmType;
+      if(!target.osmId && incoming.osmId) target.osmId = incoming.osmId;
+      target.tags = { ...(incoming.tags || {}), ...(target.tags || {}) };
+      if(!target.website) target.website = bestWebsiteFromTags(target.tags);
+      return target;
+    };
+
+    for(const place of places){
+      const idKey = place.osmType && place.osmId ? `${place.osmType}:${place.osmId}` : null;
+      const fallbackKey = `${Number(place.lat).toFixed(5)},${Number(place.lon).toFixed(5)},${String(place.name || '').toLowerCase().trim()}`;
+
+      let existing = idKey ? byId.get(idKey) : null;
+      if(!existing) existing = byFallback.get(fallbackKey);
+
+      if(existing){
+        mergePlace(existing, place);
+        if(idKey) byId.set(idKey, existing);
+        continue;
       }
-      const fallbackKey = `${p.lat.toFixed(5)},${p.lon.toFixed(5)},${p.name.toLowerCase().trim()}`;
-      if(seenFallback.has(fallbackKey)) return false;
-      seenFallback.add(fallbackKey);
-      return true;
-    });
+
+      const copy = { ...place, tags: { ...(place.tags || {}) } };
+      if(!copy.website) copy.website = bestWebsiteFromTags(copy.tags);
+
+      merged.push(copy);
+      if(idKey) byId.set(idKey, copy);
+      byFallback.set(fallbackKey, copy);
+    }
+
+    return merged;
   }
 
   function isQiblaQuery(queryRaw){
@@ -2680,35 +2811,51 @@ Helping local businesses grow with free website design, flyer design and custom 
   function buildSearchVariants(queryRaw, originLabel){
     const cleaned = queryRaw.trim().replace(/\s+/g, ' ');
     const normalised = normaliseIntentText(cleaned);
-    const words = normalised.split(/\s+/).filter(word =>
-      word.length >= 3 && !FILLER_WORDS_GLOBAL.has(word) && !GENERIC_CATEGORY_WORDS.has(word)
-    );
+    const intent = analyseIntent(queryRaw);
     const postcode = String(originLabel || '').trim();
     const outward = (postcode.match(/^[A-Z]{1,2}\d[A-Z\d]?/i) || [])[0] || '';
 
-    const variants = [cleaned, normalised];
-    if(words.length > 1) variants.push(words.join(' '));
-    variants.push(...words);
+    const semanticTerms = (intent.recognised ? intent.terms : [cleaned])
+      .map(term => String(term || '').trim())
+      .filter(isUsefulSemanticPhrase);
 
-    // Adding local context helps geocoders distinguish a nearby venue from places
-    // elsewhere in Britain that happen to share one word of the name.
-    if(postcode){
-      variants.push(`${cleaned}, ${postcode}`);
-      if(words.length === 1) variants.push(`${words[0]}, ${postcode}`);
+    const coreVariants = [cleaned, normalised, ...semanticTerms];
+
+    if(!intent.recognised){
+      const nameWords = normalised.split(/\s+/).filter(word =>
+        word.length >= 3 &&
+        !FILLER_WORDS_GLOBAL.has(word) &&
+        !GENERIC_CATEGORY_WORDS.has(word)
+      );
+      if(nameWords.length > 1) coreVariants.push(nameWords.join(' '));
+      coreVariants.push(...nameWords);
     }
-    if(outward && outward.toUpperCase().startsWith('PR')){
-      variants.push(`${cleaned}, Preston`);
-      for(const word of words) variants.push(`${word}, Preston`);
 
-      const worshipQuery = /\b(church|chapel|place of worship)\b/i.test(cleaned);
-      if(worshipQuery){
-        variants.push('City Church Preston');
-        variants.push('church, Preston');
-        variants.push('place of worship, Preston');
+    const uniqueCore = [...new Set(coreVariants.map(v => v.trim()).filter(Boolean))]
+      .slice(0, SEMANTIC_SEARCH_LIMITS.maxCoreVariants);
+
+    const localVariants = [];
+    if(postcode){
+      for(const term of uniqueCore.slice(0, SEMANTIC_SEARCH_LIMITS.maxLocalVariants)){
+        localVariants.push(`${term}, ${postcode}`);
       }
     }
 
-    return [...new Set(variants.map(v => v.trim()).filter(Boolean))].slice(0, 16);
+    if(outward && outward.toUpperCase().startsWith('PR')){
+      for(const term of uniqueCore.slice(0, SEMANTIC_SEARCH_LIMITS.maxLocalVariants)){
+        localVariants.push(`${term}, Preston`);
+      }
+
+      const worshipQuery = /\b(church|chapel|place of worship)\b/i.test(cleaned);
+      if(worshipQuery){
+        localVariants.push('City Church Preston');
+        localVariants.push('church, Preston');
+        localVariants.push('place of worship, Preston');
+      }
+    }
+
+    return [...new Set([...uniqueCore, ...localVariants].map(v => v.trim()).filter(Boolean))]
+      .slice(0, 24);
   }
 
   function scoreTextMatch(place, queryRaw){
@@ -2735,6 +2882,35 @@ Helping local businesses grow with free website design, flyer design and custom 
       tags.shop, tags.amenity, tags.building, tags.religion, tags.denomination,
       tags['operator:type'], tags.social_facility
     ].filter(Boolean).join(' '));
+
+
+    if(ids.has('transport-train')){
+      const railway = String(tags.railway || place.category || '').toLowerCase();
+      const publicTransport = String(tags.public_transport || '').toLowerCase();
+      const stationType = String(tags.station || '').toLowerCase();
+      const providerType = String(place.providerType || '').toLowerCase();
+      const providerClass = String(place.providerClass || '').toLowerCase();
+
+      const explicitRailTag =
+        ['station','halt'].includes(railway) ||
+        (publicTransport === 'station' && String(tags.train || '').toLowerCase() !== 'no') ||
+        ['train','rail'].includes(stationType);
+
+      const explicitProvider =
+        ['station','halt','train_station','railway_station'].includes(providerType) ||
+        providerClass === 'railway';
+
+      const clearRailName = /\b(train|railway|rail)\s+(station|halt)\b/.test(text) ||
+        /\bnational rail\b/.test(text);
+
+      const obviousBusOnly =
+        tags.amenity === 'bus_station' ||
+        tags.highway === 'bus_stop' ||
+        (/\b(bus|coach)\s+station\b/.test(text) && !clearRailName);
+
+      if(obviousBusOnly) return false;
+      return explicitRailTag || explicitProvider || clearRailName;
+    }
 
     if(ids.has('place-of-worship')){
       const explicitTag = tags.amenity === 'place_of_worship' || tags.building === 'church' ||
@@ -2786,7 +2962,9 @@ Helping local businesses grow with free website design, flyer design and custom 
 
     // One relaxed Nominatim request is useful when the venue lies just outside the
     // strict viewbox or OSM's search index ranks it poorly. Distance is still checked below.
-    fallbackTasks.push(searchNominatim(lat, lon, queryRaw, Math.max(radiusMeters, 15000), signal, { bounded: false, limit: '50' }));
+    for(const term of searchVariants.slice(0, 4)){
+      fallbackTasks.push(searchNominatim(lat, lon, term, Math.max(radiusMeters, 15000), signal, { bounded: false, limit: '50' }));
+    }
 
     if(radiusMeters <= 30000){
       const wordTerms = searchVariants.filter(term => !term.includes(','));
@@ -2907,7 +3085,7 @@ Helping local businesses grow with free website design, flyer design and custom 
       }
 
       places = dedupeByLocation(places);
-      const expandedNote = queryExpanded !== queryRaw ? ` (searched as: "${queryExpanded}")` : '';
+      const expandedNote = queryExpanded !== queryRaw ? ` (including close equivalents such as "${queryExpanded}")` : '';
       setStatus(places.length
         ? `Search complete: found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
         : `Search complete: no matches found.${expandedNote}`, '');
@@ -2930,6 +3108,22 @@ Helping local businesses grow with free website design, flyer design and custom 
     }
   }
 
+})();
+</script>
+
+
+<script>
+(function(){
+  const btn=document.getElementById('locateBtn');
+  if(!btn) return;
+  const sync=()=>{
+    const ready=!btn.classList.contains('locating') && !!document.querySelector('.current-address');
+    btn.classList.toggle('location-ready',ready);
+    btn.setAttribute('aria-pressed',ready?'true':'false');
+  };
+  new MutationObserver(sync).observe(btn,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(sync).observe(document.body,{childList:true,subtree:true});
+  sync();
 })();
 </script>
 
