@@ -1670,6 +1670,10 @@ Helping local businesses grow with free website design, flyer design and custom 
           if(postcodeResult.status === 'fulfilled'){
             const postcode = postcodeResult.value;
             postcodeInput.value = postcode;
+            try{
+              localStorage.setItem('nearest_to_user_postcode', String(postcode || '').trim().toUpperCase());
+              window.NTAnalytics?.heartbeat?.();
+            }catch(_error){ /* Storage may be unavailable in strict/private browser modes. */ }
             resolvedPostcodeCache = { key: normalisePostcodeKey(postcode), origin: { lat: latitude, lon: longitude, label: postcode } };
             setStatus(`Set postcode to ${postcode} from your current location.`, '');
             queryInput.focus();
@@ -3269,6 +3273,7 @@ Helping local businesses grow with free website design, flyer design and custom 
   const ADMIN_LOCAL_KEY = 'nearest_to_admin_hash_remembered';
   const VISITOR_KEY = 'nearest_to_visitor_id';
   const SESSION_KEY = 'nearest_to_session_id';
+  const USER_POSTCODE_KEY = 'nearest_to_user_postcode';
 
   const configured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON.includes('YOUR-SUPABASE');
   const client = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{persistSession:false,autoRefreshToken:false}}) : null;
@@ -3285,20 +3290,21 @@ Helping local businesses grow with free website design, flyer design and custom 
   function deviceInfo(){const ua=navigator.userAgent;let browser='Other';if(/Edg\//.test(ua))browser='Edge';else if(/Chrome\//.test(ua))browser='Chrome';else if(/Safari\//.test(ua)&&!/Chrome\//.test(ua))browser='Safari';else if(/Firefox\//.test(ua))browser='Firefox';let device=/Mobi|Android/i.test(ua)?'Mobile':'Desktop';if(/iPad|Tablet/i.test(ua))device='Tablet';return {browser,device,language:navigator.language||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||''};}
   async function sha256(text){const bytes=new TextEncoder().encode(text);const hash=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');}
   function clean(value,max=160){return String(value||'').trim().slice(0,max)}
+  function userPostcode(){try{return clean(localStorage.getItem(USER_POSTCODE_KEY),16).toUpperCase()}catch(_error){return ''}}
   function setConnection(ok,text){els.dot?.classList.toggle('off',!ok);if(els.connection)els.connection.textContent=text|| (ok?'Supabase connected':'Supabase unavailable')}
   function toast(message){if(!els.toast)return;els.toast.textContent=message;els.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>els.toast.classList.remove('show'),2400)}
 
   async function heartbeat(){
     if(!client)return;
     const d=deviceInfo();
-    try{const {error}=await client.rpc('track_visitor_session',{p_session_id:sessionId,p_visitor_id:visitorId,p_page_path:location.pathname||'/',p_referrer:clean(document.referrer,300),p_browser:d.browser,p_device_type:d.device,p_language:d.language,p_timezone:d.timezone});if(error)throw error;setConnection(true)}catch(e){setConnection(false,'Tracking unavailable')}
+    try{const {error}=await client.rpc('track_visitor_session',{p_session_id:sessionId,p_visitor_id:visitorId,p_page_path:location.pathname||'/',p_referrer:clean(document.referrer,300),p_browser:d.browser,p_device_type:d.device,p_language:d.language,p_timezone:d.timezone,p_user_postcode:userPostcode()});if(error)throw error;setConnection(true)}catch(e){setConnection(false,'Tracking unavailable')}
   }
   async function logSearch(postcode,label){
     if(!client)return;
     await heartbeat();
     const parts=clean(label,240).split(' — ');
-    const payload={session_id:sessionId,visitor_id:visitorId,postcode:clean(postcode,16).toUpperCase(),search_query:clean(parts[0],120),resolved_label:clean(parts.slice(1).join(' — '),240)};
-    client.rpc('log_search_event',{p_session_id:payload.session_id,p_visitor_id:payload.visitor_id,p_postcode:payload.postcode,p_search_query:payload.search_query,p_resolved_label:payload.resolved_label}).then(({error})=>{if(error)console.warn('Analytics insert failed:',error.message)});
+    const payload={session_id:sessionId,visitor_id:visitorId,user_postcode:userPostcode(),postcode:clean(postcode,16).toUpperCase(),search_query:clean(parts[0],120),resolved_label:clean(parts.slice(1).join(' — '),240)};
+    client.rpc('log_search_event',{p_session_id:payload.session_id,p_visitor_id:payload.visitor_id,p_user_postcode:payload.user_postcode,p_postcode:payload.postcode,p_search_query:payload.search_query,p_resolved_label:payload.resolved_label}).then(({error})=>{if(error)console.warn('Analytics insert failed:',error.message)});
   }
   window.NTAnalytics={logSearch,heartbeat};
   if(client){heartbeat();heartbeatTimer=setInterval(heartbeat,HEARTBEAT_MS);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')heartbeat()});window.addEventListener('pagehide',()=>{clearInterval(heartbeatTimer)})}
@@ -3325,26 +3331,26 @@ Helping local businesses grow with free website design, flyer design and custom 
   $('adminRefreshBtn').addEventListener('click',openDashboard);els.search.addEventListener('input',renderTable);els.range.addEventListener('change',openDashboard);
   function logout(){adminHash='';sessionStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem(ADMIN_LOCAL_KEY);closeDash()}
 
-  $('adminExportBtn').addEventListener('click',()=>{const rows=filteredRows();const header=['Time','Type','Visitor','Session','Postcode','Search','Resolved place','Browser','Device','Timezone'];const lines=[header.map(csv).join(',')];rows.forEach(r=>lines.push([r.created_at,r.type,r.visitor_id,r.session_id,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone].map(csv).join(',')));const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nearest-to-analytics-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+  $('adminExportBtn').addEventListener('click',()=>{const rows=filteredRows();const header=['Time','Type','Visitor','Session','User postcode','Search postcode','Search','Resolved place','Browser','Device','Timezone'];const lines=[header.map(csv).join(',')];rows.forEach(r=>lines.push([r.created_at,r.type,r.visitor_id,r.session_id,r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone].map(csv).join(',')));const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nearest-to-analytics-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
   function csv(v){const s=String(v||'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
 
   $('adminSettingsBtn').addEventListener('click',()=>{$('adminCurrentKey').value='';$('adminNewKey').value='';$('adminConfirmKey').value='';$('adminSettingsError').textContent='';els.settings.hidden=false;setTimeout(()=>$('adminCurrentKey').focus(),30)});
   $('adminSettingsCancel').addEventListener('click',()=>els.settings.hidden=true);els.settings.addEventListener('click',e=>{if(e.target===els.settings)els.settings.hidden=true});
   $('adminSavePassword').addEventListener('click',async e=>{const current=$('adminCurrentKey').value,newKey=$('adminNewKey').value,confirm=$('adminConfirmKey').value,error=$('adminSettingsError');error.textContent='';if(newKey.length<10){error.textContent='Use at least 10 characters.';return}if(newKey!==confirm){error.textContent='The new passwords do not match.';return}e.currentTarget.disabled=true;try{const currentHash=await sha256(current),newHash=await sha256(newKey);const {data,error:rpcError}=await client.rpc('change_admin_key',{p_current_hash:currentHash,p_new_hash:newHash});if(rpcError)throw rpcError;if(data!==true){error.textContent='Current password is incorrect.';return}adminHash=newHash;sessionStorage.setItem(ADMIN_SESSION_KEY,newHash);if(localStorage.getItem(ADMIN_LOCAL_KEY))localStorage.setItem(ADMIN_LOCAL_KEY,newHash);els.settings.hidden=true;toast('Admin password saved in Supabase.')}catch(ex){error.textContent=ex.message||'Could not save the password.'}finally{e.currentTarget.disabled=false}});
 
-  function filteredRows(){const q=els.search.value.trim().toLowerCase();const sessionMap=new Map((analyticsData.sessions||[]).map(s=>[s.session_id,s]));const searches=(analyticsData.searches||[]).map(x=>({...sessionMap.get(x.session_id),...x,type:'Search'}));const sessions=(analyticsData.sessions||[]).map(x=>({...x,created_at:x.started_at,type:'Session'}));return [...searches,...sessions].filter(r=>!q||[r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone,r.visitor_id].join(' ').toLowerCase().includes(q)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
+  function filteredRows(){const q=els.search.value.trim().toLowerCase();const sessionMap=new Map((analyticsData.sessions||[]).map(s=>[s.session_id,s]));const searches=(analyticsData.searches||[]).map(x=>({...sessionMap.get(x.session_id),...x,type:'Search'}));const sessions=(analyticsData.sessions||[]).map(x=>({...x,created_at:x.started_at,type:'Session'}));return [...searches,...sessions].filter(r=>!q||[r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone,r.visitor_id].join(' ').toLowerCase().includes(q)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
   function render(){const s=analyticsData.summary||{};els.stats.innerHTML=[metric(s.online_now||0,'Online now','online'),metric(s.sessions_today||0,'Sessions today'),metric(s.sessions_period||0,'Sessions in range'),metric(s.unique_visitors||0,'Unique visitors'),metric(s.searches_period||0,'Searches'),metric(s.returning_visitors||0,'Returning visitors')].join('');renderChart();renderPopular();renderTable()}
   function metric(value,label,cls=''){return `<article class="admin-metric ${cls}"><div class="value">${Number(value||0).toLocaleString('en-GB')}</div><div class="label">${escapeHtml(label)}</div></article>`}
   function renderChart(){const days=analyticsData.daily||[];const max=Math.max(1,...days.map(d=>Number(d.sessions||0)));els.chartTotal.textContent=days.reduce((n,d)=>n+Number(d.sessions||0),0)+' sessions';els.bars.innerHTML=days.map(d=>{const h=Math.max(3,Math.round(Number(d.sessions||0)/max*130));const label=new Date(d.day+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});return `<div class="admin-bar-col"><div class="admin-bar" style="height:${h}px" data-value="${Number(d.sessions||0)}"></div><span class="admin-bar-label">${label}</span></div>`}).join('')||'<div class="admin-empty">No data</div>'}
   function renderPopular(){const list=analyticsData.popular||[];els.popular.innerHTML=list.length?list.map(x=>`<div class="admin-list-row"><b title="${escapeHtml(x.label||'Unknown')}">${escapeHtml(x.label||'Unknown')}</b><span>${Number(x.count||0).toLocaleString('en-GB')}</span></div>`).join(''):'<div class="admin-empty">No searches yet.</div>'}
-  function renderTable(){const rows=filteredRows();els.tableCount.textContent=rows.length+' records';if(!rows.length){els.table.innerHTML='<div class="admin-empty">No activity matches this filter.</div>';return}els.table.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Type</th><th>Postcode</th><th>Search / page</th><th>Browser</th><th>Device</th><th>Timezone</th><th>Visitor</th></tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><span class="admin-badge">${escapeHtml(r.type)}</span></td><td>${escapeHtml(r.postcode||'—')}</td><td>${escapeHtml(r.search_query||r.resolved_label||r.page_path||'—')}</td><td>${escapeHtml(r.browser||'—')}</td><td>${escapeHtml(r.device_type||'—')}</td><td class="muted">${escapeHtml(r.timezone||'—')}</td><td class="muted" title="${escapeHtml(r.visitor_id||'')}">${escapeHtml((r.visitor_id||'').slice(0,8)||'—')}</td></tr>`).join('')}</tbody></table>`}
+  function renderTable(){const rows=filteredRows();els.tableCount.textContent=rows.length+' records';if(!rows.length){els.table.innerHTML='<div class="admin-empty">No activity matches this filter.</div>';return}els.table.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Type</th><th>User postcode</th><th>Search postcode</th><th>Search / page</th><th>Browser</th><th>Device</th><th>Timezone</th><th>Visitor</th></tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><span class="admin-badge">${escapeHtml(r.type)}</span></td><td>${escapeHtml(r.user_postcode||'—')}</td><td>${escapeHtml(r.postcode||'—')}</td><td>${escapeHtml(r.search_query||r.resolved_label||r.page_path||'—')}</td><td>${escapeHtml(r.browser||'—')}</td><td>${escapeHtml(r.device_type||'—')}</td><td class="muted">${escapeHtml(r.timezone||'—')}</td><td class="muted" title="${escapeHtml(r.visitor_id||'')}">${escapeHtml((r.visitor_id||'').slice(0,8)||'—')}</td></tr>`).join('')}</tbody></table>`}
   function formatDate(v){if(!v)return'—';return new Date(v).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
   function buildSetupSql(adminKeyHash){
     const hash=String(adminKeyHash||'').replace(/[^a-f0-9]/gi,'').toLowerCase();
     return `-- Nearest To: complete Supabase setup and admin password reset
--- Generated inside nearest-to33-supabase.html
+-- Generated inside nearest-to35-supabase.html
 begin;
 
 create extension if not exists pgcrypto;
@@ -3364,6 +3370,7 @@ create table if not exists public.nt_visitor_sessions(
   device_type text,
   language text,
   timezone text,
+  user_postcode text,
   started_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now()
 );
@@ -3372,12 +3379,18 @@ create table if not exists public.nt_search_events(
   id bigint generated always as identity primary key,
   session_id uuid not null,
   visitor_id uuid not null,
+  user_postcode text,
   postcode text,
   search_query text,
   resolved_label text,
   created_at timestamptz not null default now()
 );
 
+alter table public.nt_visitor_sessions add column if not exists user_postcode text;
+alter table public.nt_search_events add column if not exists user_postcode text;
+
+create index if not exists nt_sessions_user_postcode_idx on public.nt_visitor_sessions(user_postcode);
+create index if not exists nt_search_user_postcode_idx on public.nt_search_events(user_postcode);
 create index if not exists nt_sessions_visitor_idx on public.nt_visitor_sessions(visitor_id);
 create index if not exists nt_sessions_last_seen_idx on public.nt_visitor_sessions(last_seen_at desc);
 create index if not exists nt_search_created_idx on public.nt_search_events(created_at desc);
@@ -3407,9 +3420,12 @@ as $$
   );
 $$;
 
+drop function if exists public.track_visitor_session(uuid,uuid,text,text,text,text,text,text);
+drop function if exists public.track_visitor_session(uuid,uuid,text,text,text,text,text,text,text);
+
 create or replace function public.track_visitor_session(
   p_session_id uuid,p_visitor_id uuid,p_page_path text,p_referrer text,
-  p_browser text,p_device_type text,p_language text,p_timezone text
+  p_browser text,p_device_type text,p_language text,p_timezone text,p_user_postcode text
 )
 returns void
 language plpgsql
@@ -3418,21 +3434,25 @@ set search_path=public
 as $$
 begin
   insert into public.nt_visitor_sessions(
-    session_id,visitor_id,page_path,referrer,browser,device_type,language,timezone,started_at,last_seen_at
+    session_id,visitor_id,page_path,referrer,browser,device_type,language,timezone,user_postcode,started_at,last_seen_at
   ) values(
     p_session_id,p_visitor_id,left(coalesce(p_page_path,''),300),left(coalesce(p_referrer,''),500),
     left(coalesce(p_browser,''),80),left(coalesce(p_device_type,''),40),
-    left(coalesce(p_language,''),40),left(coalesce(p_timezone,''),100),now(),now()
+    left(coalesce(p_language,''),40),left(coalesce(p_timezone,''),100),nullif(left(upper(trim(coalesce(p_user_postcode,''))),16),''),now(),now()
   )
   on conflict(session_id) do update set
     last_seen_at=now(),page_path=excluded.page_path,referrer=excluded.referrer,
     browser=excluded.browser,device_type=excluded.device_type,
-    language=excluded.language,timezone=excluded.timezone;
+    language=excluded.language,timezone=excluded.timezone,
+    user_postcode=coalesce(excluded.user_postcode,public.nt_visitor_sessions.user_postcode);
 end;
 $$;
 
+drop function if exists public.log_search_event(uuid,uuid,text,text,text);
+drop function if exists public.log_search_event(uuid,uuid,text,text,text,text);
+
 create or replace function public.log_search_event(
-  p_session_id uuid,p_visitor_id uuid,p_postcode text,p_search_query text,p_resolved_label text
+  p_session_id uuid,p_visitor_id uuid,p_user_postcode text,p_postcode text,p_search_query text,p_resolved_label text
 )
 returns void
 language plpgsql
@@ -3440,9 +3460,9 @@ security definer
 set search_path=public
 as $$
 begin
-  insert into public.nt_search_events(session_id,visitor_id,postcode,search_query,resolved_label)
+  insert into public.nt_search_events(session_id,visitor_id,user_postcode,postcode,search_query,resolved_label)
   values(
-    p_session_id,p_visitor_id,left(upper(coalesce(p_postcode,'')),16),
+    p_session_id,p_visitor_id,nullif(left(upper(trim(coalesce(p_user_postcode,''))),16),''),left(upper(coalesce(p_postcode,'')),16),
     left(coalesce(p_search_query,''),120),left(coalesce(p_resolved_label,''),240)
   );
 end;
@@ -3521,14 +3541,14 @@ end;
 $$;
 
 revoke all on function public.verify_admin_key(text) from public;
-revoke all on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text) from public;
-revoke all on function public.log_search_event(uuid,uuid,text,text,text) from public;
+revoke all on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text,text) from public;
+revoke all on function public.log_search_event(uuid,uuid,text,text,text,text) from public;
 revoke all on function public.change_admin_key(text,text) from public;
 revoke all on function public.get_admin_analytics(text,integer,integer) from public;
 
 grant execute on function public.verify_admin_key(text) to anon,authenticated;
-grant execute on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text) to anon,authenticated;
-grant execute on function public.log_search_event(uuid,uuid,text,text,text) to anon,authenticated;
+grant execute on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text,text) to anon,authenticated;
+grant execute on function public.log_search_event(uuid,uuid,text,text,text,text) to anon,authenticated;
 grant execute on function public.change_admin_key(text,text) to anon,authenticated;
 grant execute on function public.get_admin_analytics(text,integer,integer) to anon,authenticated;
 
