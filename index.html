@@ -1189,50 +1189,54 @@
   }
   @media(max-width:410px){.gb-tab{display:none}.help-launch-btn{min-height:36px}.help-launch-icon{width:23px;height:23px}}
 
+  /* ---- Admin: delete stored records ---- */
+  .admin-panel-head-actions{display:flex;align-items:center;gap:9px}
+  .admin-btn.small{min-height:31px;padding:5px 11px;font-size:11px}
+  .admin-confirm{width:min(420px,100%);padding:24px;background:linear-gradient(145deg,#FFFEFA,#F3EFE4);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.5)}
+  .admin-confirm .admin-brand-icon{background:var(--postbox-red)}
+  .admin-confirm-body{font-size:12.5px;line-height:1.6;color:var(--muted);margin:2px 0 14px}
+  .admin-confirm-body b{color:var(--ink)}
 
-  /* ---- Professional feedback form ---- */
+  /* ---- Feedback: launch button ---- */
   .feedback-launch-btn{
-    position:relative;display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 11px 6px 7px;
-    border:1px solid rgba(27,58,47,.22);border-radius:999px;background:linear-gradient(145deg,#fff,#F3F8F5);
-    color:var(--os-green);font:700 11px 'Inter',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(27,58,47,.10);
-    transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,background .16s ease;
+    position:relative;display:inline-flex;align-items:center;gap:8px;min-height:38px;
+    padding:7px 13px 7px 10px;border:1px solid rgba(200,16,46,.28);border-radius:999px;
+    background:linear-gradient(145deg,#fff,#FDF4F5);color:var(--postbox-red);cursor:pointer;
+    font:800 11.5px/1 'Inter',sans-serif;letter-spacing:.01em;
+    box-shadow:0 5px 16px rgba(200,16,46,.12);transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
   }
-  .feedback-launch-btn:hover{transform:translateY(-1px);border-color:rgba(27,58,47,.42);background:#fff;box-shadow:0 8px 22px rgba(27,58,47,.16)}
+  .feedback-launch-btn:hover{transform:translateY(-1px);background:#fff;box-shadow:0 8px 22px rgba(200,16,46,.2)}
   .feedback-launch-btn:active{transform:scale(.97)}
-  .feedback-launch-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--os-green);color:#fff;box-shadow:0 0 0 4px rgba(27,58,47,.09)}
-  .feedback-launch-icon svg{width:14px;height:14px}
-  .feedback-overlay{position:fixed;inset:0;z-index:1350;display:grid;place-items:center;padding:18px;background:rgba(12,24,19,.72);backdrop-filter:blur(10px)}
+  .feedback-launch-btn svg{flex:0 0 auto}
+  .feedback-launch-sep{opacity:.35;margin:0 3px;font-weight:400}
+
+  /* ---- Feedback: modal dialog ---- */
+  .feedback-overlay{position:fixed;inset:0;z-index:1050;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,22,19,.68);backdrop-filter:blur(10px)}
   .feedback-overlay[hidden]{display:none}
-  .feedback-dialog{width:min(570px,100%);max-height:min(94vh,780px);overflow:auto;background:#FCFBF7;border:1px solid rgba(255,255,255,.46);border-radius:22px;box-shadow:0 34px 95px rgba(0,0,0,.42)}
-  .feedback-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px 18px;background:linear-gradient(135deg,var(--os-green),#2E5A47);color:#fff;border-radius:22px 22px 0 0}
-  .feedback-head-main{display:flex;align-items:center;gap:11px}.feedback-head-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.14)}
-  .feedback-head h2{margin:0;font:800 21px/1.08 'Archivo Narrow',sans-serif}.feedback-head p{margin:4px 0 0;color:rgba(255,255,255,.74);font-size:11.5px}
-  .feedback-close{width:37px;height:37px;border:1px solid rgba(255,255,255,.2);border-radius:11px;background:rgba(255,255,255,.09);color:#fff;font-size:22px;cursor:pointer}.feedback-close:hover{background:rgba(255,255,255,.18)}
-  .feedback-form{padding:17px 18px 19px;background:#F7F4EC}
-  .feedback-intro{margin:0 0 14px;padding:10px 12px;border:1px solid rgba(26,95,180,.14);border-radius:11px;background:rgba(26,95,180,.055);color:var(--muted);font-size:12px;line-height:1.55}
-  .feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.feedback-field{margin:0}.feedback-field.full{grid-column:1/-1}
-  .feedback-field label{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}.feedback-optional{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
-  .feedback-input,.feedback-textarea{width:100%;border:1px solid #C8C0AC;border-radius:9px;background:#fff;color:var(--ink);padding:10px 11px;font:500 13px 'Inter',sans-serif;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
-  .feedback-input{min-height:43px}.feedback-textarea{min-height:126px;resize:vertical;line-height:1.5}
-  .feedback-input:focus,.feedback-textarea:focus{border-color:var(--route-blue);box-shadow:var(--focus-ring)}
-  .feedback-meta{display:flex;justify-content:space-between;gap:10px;margin-top:5px;color:var(--muted);font-size:10.5px}.feedback-counter.limit{color:var(--postbox-red);font-weight:700}
-  .feedback-error{min-height:19px;margin:10px 0 3px;color:var(--postbox-red);font-size:12px;font-weight:700}
-  .feedback-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:5px}.feedback-submit{min-width:150px}.feedback-privacy{margin:10px 0 0;color:var(--muted);font-size:10.5px;line-height:1.45}
-  .admin-panel-head-actions{display:flex;align-items:center;gap:8px}.admin-delete-btn{min-height:32px;padding:6px 10px;border-radius:8px;border:1px solid rgba(200,16,46,.34);background:#FFF6F7;color:var(--postbox-red);font:800 11px 'Inter',sans-serif;cursor:pointer;transition:.15s ease}.admin-delete-btn:hover{background:var(--postbox-red);color:#fff;box-shadow:0 5px 13px rgba(200,16,46,.18);transform:translateY(-1px)}.admin-delete-btn:disabled{opacity:.55;cursor:wait;transform:none}
-  @media(max-width:700px){.feedback-launch-btn .feedback-label{display:none}.feedback-launch-btn{padding-right:7px}.feedback-grid{grid-template-columns:1fr}.feedback-field.full{grid-column:auto}.feedback-overlay{align-items:end;padding:0}.feedback-dialog{border-radius:20px 20px 0 0;max-height:96vh}.feedback-head{border-radius:20px 20px 0 0}.feedback-form{padding:14px}.admin-panel-head-actions{gap:5px}.admin-delete-btn{font-size:0;width:34px;padding:0}.admin-delete-btn:before{content:"🗑";font-size:14px}}
-
-
-  /* Admin feedback viewer */
-  .admin-feedback-btn{background:linear-gradient(135deg,#1A5FB4,#164B8A);border-color:#164B8A;color:#fff;box-shadow:0 5px 14px rgba(26,95,180,.18)}
-  .admin-feedback-btn:hover{box-shadow:0 8px 20px rgba(26,95,180,.26)}
-  .admin-feedback-shell{width:min(1080px,100%);max-height:min(90vh,860px);display:flex;flex-direction:column;background:#FCFBF7;border-radius:20px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.38)}
-  .admin-feedback-body{padding:14px 16px 18px;overflow:auto;background:#F5F2E9;flex:1}
-  .admin-feedback-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:9px;margin-bottom:11px}
-  .admin-feedback-table td.message-cell{white-space:normal;min-width:260px;max-width:430px;line-height:1.45}
-  .admin-feedback-table td.contact-cell{white-space:normal;min-width:180px;line-height:1.5}
-  .admin-feedback-table a{color:var(--route-blue);text-decoration:none}.admin-feedback-table a:hover{text-decoration:underline}
-  .admin-feedback-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:10.5px}
-  @media(max-width:620px){.admin-feedback-shell{height:96vh;max-height:96vh;border-radius:20px 20px 0 0}.admin-feedback-toolbar{grid-template-columns:1fr}.admin-feedback-table td.message-cell{min-width:220px}}
+  .feedback-dialog{position:relative;width:min(460px,100%);max-height:92vh;overflow:auto;padding:28px 26px 24px;background:linear-gradient(160deg,#FFFEFA,#F6F1E4);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.5)}
+  .feedback-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1px solid #DED8C8;background:#fff;color:var(--ink);font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .feedback-close:hover{background:#F3EFE4;transform:rotate(90deg)}
+  .feedback-head{text-align:center;margin-bottom:18px}
+  .feedback-badge{width:52px;height:52px;margin:0 auto 12px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;background:linear-gradient(135deg,var(--postbox-red),#9c0c22);box-shadow:0 10px 24px rgba(200,16,46,.3)}
+  .feedback-head h2{margin:0 0 6px;font:800 20px 'Archivo Narrow',sans-serif;color:var(--os-green)}
+  .feedback-head p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .feedback-field{margin-bottom:14px}
+  .feedback-field label{display:block;font:700 12px 'Inter',sans-serif;color:var(--ink);margin-bottom:6px}
+  .feedback-field .req{color:var(--postbox-red)}
+  .feedback-field .opt{color:var(--muted);font-weight:500;font-size:10.5px;text-transform:none}
+  .feedback-field input,.feedback-field textarea{width:100%;border:1px solid #C8C0AC;border-radius:10px;background:#fff;color:var(--ink);padding:10px 12px;font:500 13.5px 'Inter',sans-serif;outline:none;resize:vertical;transition:.15s}
+  .feedback-field input:focus,.feedback-field textarea:focus{border-color:var(--route-blue);box-shadow:0 0 0 4px rgba(26,95,180,.13)}
+  .feedback-field input.invalid,.feedback-field textarea.invalid{border-color:var(--postbox-red);box-shadow:0 0 0 4px rgba(200,16,46,.1)}
+  .feedback-count{display:block;text-align:right;font-size:10.5px;color:var(--muted);margin-top:4px}
+  .feedback-error{min-height:16px;color:var(--postbox-red);font-size:12px;font-weight:600;margin:2px 0 10px}
+  .feedback-submit{width:100%;min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--os-green),var(--os-green-light));color:#fff;font:800 14px 'Inter',sans-serif;cursor:pointer;box-shadow:0 12px 26px rgba(27,58,47,.22);transition:.16s}
+  .feedback-submit:hover{transform:translateY(-1px);box-shadow:0 16px 32px rgba(27,58,47,.28)}
+  .feedback-submit:disabled{opacity:.6;cursor:wait;transform:none}
+  .feedback-success{text-align:center;padding:10px 4px 2px}
+  .feedback-success-icon{width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,var(--os-green),var(--os-green-light));color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;box-shadow:0 12px 26px rgba(27,58,47,.25)}
+  .feedback-success h3{margin:0 0 6px;font:800 18px 'Archivo Narrow',sans-serif;color:var(--os-green)}
+  .feedback-success p{margin:0 0 18px;font-size:12.5px;color:var(--muted);line-height:1.6}
+  @media(max-width:520px){.feedback-overlay{align-items:flex-end;padding:0}.feedback-dialog{border-radius:20px 20px 0 0;max-height:94vh}.feedback-launch-text{display:none}.feedback-launch-btn{padding:8px;min-height:36px}}
 
 </style>
 </head>
@@ -1254,9 +1258,9 @@
         <span class="help-launch-text"><b class="full-label">Help</b><span class="help-launch-sep">|</span><b>راهنما</b><span class="help-launch-sep">EN/FA</span></span>
         <span class="help-pulse" aria-hidden="true"></span>
       </button>
-      <button type="button" class="feedback-launch-btn" id="feedbackLaunchBtn" aria-haspopup="dialog" aria-controls="feedbackOverlay" title="Send feedback">
-        <span class="feedback-launch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H10l-5 4v-4a2 2 0 01-2-2V7a2 2 0 012-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-        <span class="feedback-label">Feedback</span>
+      <button type="button" class="feedback-launch-btn" id="feedbackLaunchBtn" aria-haspopup="dialog" aria-controls="feedbackOverlay" title="Send feedback | ارسال نظر">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V4H6.5A2.5 2.5 0 004 6.5v13z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 8h8M8 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="feedback-launch-text"><b>Feedback</b><span class="feedback-launch-sep">|</span><b>نظر شما</b></span>
       </button>
       <div class="gb-tab">UK ONLY</div>
     </div>
@@ -1335,28 +1339,50 @@ Helping local businesses grow with free website design, flyer design and custom 
 
 </div>
 
-
-
-<div class="feedback-overlay" id="feedbackOverlay" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle" hidden>
-  <section class="feedback-dialog" tabindex="-1">
-    <div class="feedback-head">
-      <div class="feedback-head-main"><span class="feedback-head-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H10l-5 4v-4a2 2 0 01-2-2V7a2 2 0 012-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h2 id="feedbackTitle">Share your feedback</h2><p>Help us improve Nearest To</p></div></div>
-      <button type="button" class="feedback-close" id="feedbackCloseBtn" aria-label="Close feedback form">×</button>
-    </div>
-    <form class="feedback-form" id="feedbackForm" novalidate>
-      <p class="feedback-intro">Found something useful, confusing or missing? Send a short comment or suggestion. Required fields are marked with an asterisk.</p>
-      <div class="feedback-grid">
-        <div class="feedback-field"><label for="feedbackName">Name *</label><input class="feedback-input" id="feedbackName" name="name" type="text" maxlength="70" autocomplete="name" required placeholder="Your name"></div>
-        <div class="feedback-field"><label for="feedbackEmail">Email *</label><input class="feedback-input" id="feedbackEmail" name="email" type="email" maxlength="120" autocomplete="email" required placeholder="name@example.com"></div>
-        <div class="feedback-field full"><label for="feedbackMobile">Mobile number <span class="feedback-optional">Optional</span></label><input class="feedback-input" id="feedbackMobile" name="mobile" type="tel" maxlength="24" autocomplete="tel" inputmode="tel" placeholder="e.g. 07123 456789"></div>
-        <div class="feedback-field full"><label for="feedbackMessage">Comment or suggestion <span class="feedback-optional">Optional</span></label><textarea class="feedback-textarea" id="feedbackMessage" name="message" maxlength="500" placeholder="Tell us what worked well or what could be improved."></textarea><div class="feedback-meta"><span>Maximum 500 characters</span><span class="feedback-counter" id="feedbackCounter">0 / 500</span></div></div>
+<div class="feedback-overlay" id="feedbackOverlay" hidden>
+  <section class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+    <button type="button" class="feedback-close" id="feedbackClose" aria-label="Close">×</button>
+    <div id="feedbackFormView">
+      <div class="feedback-head">
+        <div class="feedback-badge">✉</div>
+        <h2 id="feedbackTitle">We'd love your feedback</h2>
+        <p>Help us improve Nearest To.<br>نظرات و پیشنهادات شما به بهتر شدن این سرویس کمک می‌کند.</p>
       </div>
-      <div class="feedback-error" id="feedbackError" aria-live="polite"></div>
-      <div class="feedback-actions"><button type="button" class="admin-btn" id="feedbackCancelBtn">Cancel</button><button type="submit" class="admin-btn primary feedback-submit" id="feedbackSubmitBtn">Send feedback</button></div>
-      <p class="feedback-privacy">Your details are used only to review and respond to this feedback. Please do not include sensitive personal information.</p>
-    </form>
+      <form id="feedbackForm" novalidate>
+        <div class="feedback-field">
+          <label for="fbName">Full name <span class="req">*</span></label>
+          <input type="text" id="fbName" name="name" maxlength="60" required placeholder="Your name" autocomplete="name">
+          <span class="feedback-count" id="fbNameCount">0 / 60</span>
+        </div>
+        <div class="feedback-field">
+          <label for="fbEmail">Email <span class="req">*</span></label>
+          <input type="email" id="fbEmail" name="email" maxlength="120" required placeholder="you@example.com" autocomplete="email">
+          <span class="feedback-count" id="fbEmailCount">0 / 120</span>
+        </div>
+        <div class="feedback-field">
+          <label for="fbMobile">Mobile number <span class="opt">(optional)</span></label>
+          <input type="tel" id="fbMobile" name="mobile" maxlength="20" placeholder="07xxx xxxxxx" autocomplete="tel">
+          <span class="feedback-count" id="fbMobileCount">0 / 20</span>
+        </div>
+        <div class="feedback-field">
+          <label for="fbMessage">Your comment or suggestion <span class="opt">(optional)</span></label>
+          <textarea id="fbMessage" name="message" maxlength="500" rows="4" placeholder="Tell us what you think…"></textarea>
+          <span class="feedback-count" id="fbMessageCount">0 / 500</span>
+        </div>
+        <div class="feedback-error" id="feedbackError" aria-live="polite"></div>
+        <button type="submit" class="feedback-submit" id="feedbackSubmit">Send feedback</button>
+      </form>
+    </div>
+    <div class="feedback-success" id="feedbackSuccess" hidden>
+      <div class="feedback-success-icon">✓</div>
+      <h3>Thank you!</h3>
+      <p>Your feedback has been received.<br>از نظر شما سپاسگزاریم.</p>
+      <button type="button" class="admin-btn primary" id="feedbackDone">Close</button>
+    </div>
   </section>
 </div>
+
+
 
 <div class="help-overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpDialogTitle" hidden>
   <div class="help-dialog" tabindex="-1">
@@ -3409,26 +3435,9 @@ Helping local businesses grow with free website design, flyer design and custom 
         <button type="button" class="admin-btn refresh" id="adminRefreshBtn">↻ Refresh</button>
         <button type="button" class="admin-btn export" id="adminExportBtn">↓ Export CSV</button>
         <button type="button" class="admin-btn settings" id="adminSettingsBtn">⚙ Password</button>
-        <button type="button" class="admin-btn admin-feedback-btn" id="adminViewFeedbackBtn">✉ View feedback</button>
       </div>
-      <section class="admin-table-panel"><div class="admin-panel-head"><h3>Visitor activity</h3><div class="admin-panel-head-actions"><span id="adminTableCount">0 records</span><button type="button" class="admin-delete-btn" id="adminDeleteActivityBtn" title="Delete all stored visitor activity">Delete records</button></div></div><div class="admin-table-wrap" id="adminTableWrap"><div class="admin-loading">Loading analytics…</div></div></section>
-    </div>
-  </section>
-</div>
-
-
-<div class="admin-overlay" id="adminFeedbackOverlay" hidden>
-  <section class="admin-feedback-shell" role="dialog" aria-modal="true" aria-labelledby="adminFeedbackTitle">
-    <header class="admin-head">
-      <div class="admin-head-main"><div class="admin-head-icon">✉</div><div><h2 id="adminFeedbackTitle">User feedback</h2><p>Messages, suggestions and contact details submitted by visitors</p></div></div>
-      <div class="admin-head-actions"><button type="button" class="admin-btn refresh-live" id="adminFeedbackRefreshBtn">⟳ Refresh</button><button class="admin-icon-btn" id="adminFeedbackCloseBtn" type="button" aria-label="Close feedback">×</button></div>
-    </header>
-    <div class="admin-feedback-body">
-      <div class="admin-feedback-toolbar">
-        <input class="admin-input" type="search" id="adminFeedbackSearch" placeholder="Search name, email, mobile, message or postcode…">
-        <span class="admin-badge" id="adminFeedbackCount">0 messages</span>
-      </div>
-      <section class="admin-table-panel"><div class="admin-table-wrap" id="adminFeedbackTableWrap"><div class="admin-loading">Loading feedback…</div></div></section>
+      <section class="admin-table-panel"><div class="admin-panel-head"><h3>Visitor activity</h3><div class="admin-panel-head-actions"><span id="adminTableCount">0 records</span><button type="button" class="admin-btn danger small" id="adminClearActivityBtn" title="Delete stored visitor activity">🗑 Delete records</button></div></div><div class="admin-table-wrap" id="adminTableWrap"><div class="admin-loading">Loading analytics…</div></div></section>
+      <section class="admin-table-panel"><div class="admin-panel-head"><h3>User feedback</h3><div class="admin-panel-head-actions"><span id="adminFeedbackCount">0 records</span><button type="button" class="admin-btn danger small" id="adminClearFeedbackBtn" title="Delete stored feedback messages">🗑 Delete records</button></div></div><div class="admin-table-wrap" id="adminFeedbackWrap"><div class="admin-loading">Loading feedback…</div></div></section>
     </div>
   </section>
 </div>
@@ -3463,6 +3472,16 @@ Helping local businesses grow with free website design, flyer design and custom 
   </section>
 </div>
 
+<div class="admin-overlay" id="adminClearOverlay" hidden>
+  <section class="admin-confirm" role="dialog" aria-modal="true" aria-labelledby="adminClearTitle">
+    <div class="admin-brand"><div class="admin-brand-icon">🗑</div><div><h2 id="adminClearTitle">Delete stored records</h2></div></div>
+    <p class="admin-confirm-body" id="adminClearBody">This will permanently delete records from Supabase. This cannot be undone.</p>
+    <div class="admin-field"><label for="adminClearRange">Range to delete</label><select class="admin-select" id="adminClearRange"><option value="0">All stored records</option><option value="90">Older than 90 days</option><option value="30">Older than 30 days</option><option value="7">Older than 7 days</option></select></div>
+    <div class="admin-error" id="adminClearError" aria-live="polite"></div>
+    <div class="admin-actions"><button type="button" class="admin-btn" id="adminClearCancel">Cancel</button><button type="button" class="admin-btn danger" id="adminClearConfirm">Delete records</button></div>
+  </section>
+</div>
+
 <div class="admin-toast" id="adminToast" aria-live="polite"></div>
 
 <script>
@@ -3490,9 +3509,10 @@ Helping local businesses grow with free website design, flyer design and custom 
   const configured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON.includes('YOUR-SUPABASE');
   const client = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{persistSession:false,autoRefreshToken:false}}) : null;
   const $ = id => document.getElementById(id);
-  const els = {trigger:$('adminTrigger'),login:$('adminLoginOverlay'),dash:$('adminDashOverlay'),settings:$('adminSettingsOverlay'),recovery:$('adminRecoveryOverlay'),key:$('adminKeyInput'),remember:$('adminRememberKey'),loginError:$('adminLoginError'),loginSubmit:$('adminLoginSubmit'),stats:$('adminStatsGrid'),bars:$('adminBars'),popular:$('adminPopularList'),table:$('adminTableWrap'),tableCount:$('adminTableCount'),chartTotal:$('adminChartTotal'),search:$('adminSearchBox'),range:$('adminRangeSelect'),dot:$('adminConnectionDot'),connection:$('adminConnectionText'),toast:$('adminToast')};
+  const els = {trigger:$('adminTrigger'),login:$('adminLoginOverlay'),dash:$('adminDashOverlay'),settings:$('adminSettingsOverlay'),recovery:$('adminRecoveryOverlay'),clear:$('adminClearOverlay'),key:$('adminKeyInput'),remember:$('adminRememberKey'),loginError:$('adminLoginError'),loginSubmit:$('adminLoginSubmit'),stats:$('adminStatsGrid'),bars:$('adminBars'),popular:$('adminPopularList'),table:$('adminTableWrap'),tableCount:$('adminTableCount'),feedbackTable:$('adminFeedbackWrap'),feedbackCount:$('adminFeedbackCount'),chartTotal:$('adminChartTotal'),search:$('adminSearchBox'),range:$('adminRangeSelect'),dot:$('adminConnectionDot'),connection:$('adminConnectionText'),toast:$('adminToast')};
   let adminHash = sessionStorage.getItem(ADMIN_SESSION_KEY) || localStorage.getItem(ADMIN_LOCAL_KEY) || '';
-  let analyticsData = {summary:{},sessions:[],searches:[],daily:[],popular:[]};
+  let analyticsData = {summary:{},sessions:[],searches:[],daily:[],popular:[],feedback:[]};
+  let pendingClearAction = null;
   let tapCount=0,tapTimer=null,heartbeatTimer=null;
 
   function uuid(){ return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)}); }
@@ -3519,17 +3539,6 @@ Helping local businesses grow with free website design, flyer design and custom 
     client.rpc('log_search_event',{p_session_id:payload.session_id,p_visitor_id:payload.visitor_id,p_user_postcode:payload.user_postcode,p_postcode:payload.postcode,p_search_query:payload.search_query,p_resolved_label:payload.resolved_label}).then(({error})=>{if(error)console.warn('Analytics insert failed:',error.message)});
   }
   window.NTAnalytics={logSearch,heartbeat};
-  window.NTFeedback={submit:async payload=>{
-    if(!client)throw new Error('Feedback service is not available at the moment.');
-    const d=deviceInfo();
-    const {data,error}=await client.rpc('submit_user_feedback',{
-      p_name:clean(payload.name,70),p_email:clean(payload.email,120).toLowerCase(),p_mobile:clean(payload.mobile,24),p_message:clean(payload.message,500),
-      p_page_path:clean(location.pathname||'/',300),p_user_postcode:userPostcode(),p_browser:d.browser,p_device_type:d.device
-    });
-    if(error)throw new Error(error.message);
-    if(data!==true)throw new Error('Feedback could not be saved.');
-    return true;
-  }};
   if(client){heartbeat();heartbeatTimer=setInterval(heartbeat,HEARTBEAT_MS);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')heartbeat()});window.addEventListener('pagehide',()=>{clearInterval(heartbeatTimer)})}
 
   function openLogin(){els.loginError.textContent=configured?'':'Supabase is not configured in this file yet.';els.key.value='';els.login.hidden=false;setTimeout(()=>els.key.focus(),30)}
@@ -3547,63 +3556,12 @@ Helping local businesses grow with free website design, flyer design and custom 
     const days=parseInt(els.range.value,10)||0;
     const {data,error}=await client.rpc('get_admin_analytics',{p_key_hash:adminHash,p_days:days,p_online_seconds:ONLINE_WINDOW_SECONDS});
     if(error)throw new Error(error.message);if(!data||data.authorised===false)throw new Error('Admin session is no longer authorised.');
-    analyticsData={summary:data.summary||{},sessions:data.sessions||[],searches:data.searches||[],daily:data.daily||[],popular:data.popular||[]};
+    analyticsData={summary:data.summary||{},sessions:data.sessions||[],searches:data.searches||[],daily:data.daily||[],popular:data.popular||[],feedback:data.feedback||[]};
   }
   async function openDashboard(){els.dash.hidden=false;els.table.innerHTML='<div class="admin-loading">Loading analytics…</div>';try{await fetchDashboard();setConnection(true);render()}catch(e){setConnection(false,'Connection failed');els.table.innerHTML='<div class="admin-empty">'+escapeHtml(e.message)+'</div>';if(/authorised/i.test(e.message)){logout();openLogin()}}}
-  window.loadAnalytics=openDashboard;
   $('adminDashClose').addEventListener('click',closeDash);els.dash.addEventListener('click',e=>{if(e.target===els.dash)closeDash()});
   $('adminRefreshBtn').addEventListener('click',openDashboard);els.search.addEventListener('input',renderTable);els.range.addEventListener('change',openDashboard);
   function logout(){adminHash='';sessionStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem(ADMIN_LOCAL_KEY);closeDash()}
-
-  $('adminDeleteActivityBtn').addEventListener('click',async e=>{
-    const rows=filteredRows().length;
-    const warning=rows?`This will permanently delete all stored visitor sessions and search activity, not only the ${rows} records currently shown. This cannot be undone. Continue?`:'This will permanently delete all stored visitor sessions and search activity. This cannot be undone. Continue?';
-    if(!window.confirm(warning))return;
-    const second=window.prompt('Type DELETE to confirm permanent removal of all visitor activity.');
-    if(second!=='DELETE'){toast('Deletion cancelled.');return}
-    const btn=e.currentTarget;const original=btn.textContent;btn.disabled=true;btn.textContent='Deleting…';
-    try{
-      const {data,error}=await client.rpc('delete_admin_visitor_activity',{p_key_hash:adminHash});
-      if(error)throw new Error(error.message);
-      if(!data||data.authorised===false)throw new Error('Admin session is no longer authorised.');
-      analyticsData={summary:{},sessions:[],searches:[],daily:[],popular:[]};
-      await fetchDashboard();render();
-      toast(`Deleted ${Number(data.searches_deleted||0).toLocaleString('en-GB')} searches and ${Number(data.sessions_deleted||0).toLocaleString('en-GB')} sessions.`);
-    }catch(ex){toast(ex.message||'Could not delete visitor activity.')}finally{btn.disabled=false;btn.textContent=original}
-  });
-
-  let feedbackRows=[];
-  const feedbackOverlay=$('adminFeedbackOverlay');
-  const feedbackTable=$('adminFeedbackTableWrap');
-  const feedbackSearch=$('adminFeedbackSearch');
-  const feedbackCount=$('adminFeedbackCount');
-
-  async function fetchAdminFeedback(){
-    feedbackTable.innerHTML='<div class="admin-loading">Loading feedback…</div>';
-    const {data,error}=await client.rpc('get_admin_feedback',{p_key_hash:adminHash});
-    if(error)throw new Error(error.message);
-    if(!data||data.authorised===false)throw new Error('Admin session is no longer authorised.');
-    feedbackRows=Array.isArray(data.feedback)?data.feedback:[];
-    renderAdminFeedback();
-  }
-  function renderAdminFeedback(){
-    const q=(feedbackSearch.value||'').trim().toLowerCase();
-    const rows=feedbackRows.filter(r=>!q||[r.name,r.email,r.mobile,r.message,r.user_postcode,r.browser,r.device_type].join(' ').toLowerCase().includes(q));
-    feedbackCount.textContent=rows.length+(rows.length===1?' message':' messages');
-    if(!rows.length){feedbackTable.innerHTML='<div class="admin-empty">No feedback matches this search.</div>';return}
-    feedbackTable.innerHTML=`<table class="admin-table admin-feedback-table"><thead><tr><th>Received</th><th>Name</th><th>Contact details</th><th>Comment or suggestion</th><th>Postcode</th><th>Device</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><b>${escapeHtml(r.name||'—')}</b></td><td class="contact-cell"><a href="mailto:${escapeHtml(r.email||'')}">${escapeHtml(r.email||'—')}</a>${r.mobile?`<br><a href="tel:${escapeHtml(r.mobile)}">${escapeHtml(r.mobile)}</a>`:''}</td><td class="message-cell">${escapeHtml(r.message||'No comment was provided.')}</td><td>${escapeHtml(r.user_postcode||'—')}</td><td><div>${escapeHtml(r.browser||'—')}</div><div class="admin-feedback-meta"><span>${escapeHtml(r.device_type||'—')}</span><span>${escapeHtml(r.page_path||'')}</span></div></td></tr>`).join('')}</tbody></table>`;
-  }
-  async function openAdminFeedback(){
-    feedbackOverlay.hidden=false;
-    document.body.style.overflow='hidden';
-    try{await fetchAdminFeedback();setConnection(true)}catch(ex){feedbackTable.innerHTML='<div class="admin-empty">'+escapeHtml(ex.message||'Could not load feedback.')+'</div>'}
-  }
-  function closeAdminFeedback(){feedbackOverlay.hidden=true;document.body.style.overflow=''}
-  $('adminViewFeedbackBtn').addEventListener('click',openAdminFeedback);
-  $('adminFeedbackCloseBtn').addEventListener('click',closeAdminFeedback);
-  $('adminFeedbackRefreshBtn').addEventListener('click',fetchAdminFeedback);
-  feedbackSearch.addEventListener('input',renderAdminFeedback);
-  feedbackOverlay.addEventListener('click',e=>{if(e.target===feedbackOverlay)closeAdminFeedback()});
 
   $('adminExportBtn').addEventListener('click',()=>{const rows=filteredRows();const header=['Time','Type','Visitor','Session','User postcode','Search postcode','Search','Resolved place','Browser','Device','Timezone'];const lines=[header.map(csv).join(',')];rows.forEach(r=>lines.push([r.created_at,r.type,r.visitor_id,r.session_id,r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone].map(csv).join(',')));const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nearest-to-analytics-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
   function csv(v){const s=String(v||'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
@@ -3613,11 +3571,12 @@ Helping local businesses grow with free website design, flyer design and custom 
   $('adminSavePassword').addEventListener('click',async e=>{const current=$('adminCurrentKey').value,newKey=$('adminNewKey').value,confirm=$('adminConfirmKey').value,error=$('adminSettingsError');error.textContent='';if(newKey.length<10){error.textContent='Use at least 10 characters.';return}if(newKey!==confirm){error.textContent='The new passwords do not match.';return}e.currentTarget.disabled=true;try{const currentHash=await sha256(current),newHash=await sha256(newKey);const {data,error:rpcError}=await client.rpc('change_admin_key',{p_current_hash:currentHash,p_new_hash:newHash});if(rpcError)throw rpcError;if(data!==true){error.textContent='Current password is incorrect.';return}adminHash=newHash;sessionStorage.setItem(ADMIN_SESSION_KEY,newHash);if(localStorage.getItem(ADMIN_LOCAL_KEY))localStorage.setItem(ADMIN_LOCAL_KEY,newHash);els.settings.hidden=true;toast('Admin password saved in Supabase.')}catch(ex){error.textContent=ex.message||'Could not save the password.'}finally{e.currentTarget.disabled=false}});
 
   function filteredRows(){const q=els.search.value.trim().toLowerCase();const sessionMap=new Map((analyticsData.sessions||[]).map(s=>[s.session_id,s]));const searches=(analyticsData.searches||[]).map(x=>({...sessionMap.get(x.session_id),...x,type:'Search'}));const sessions=(analyticsData.sessions||[]).map(x=>({...x,created_at:x.started_at,type:'Session'}));return [...searches,...sessions].filter(r=>!q||[r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone,r.visitor_id].join(' ').toLowerCase().includes(q)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
-  function render(){const s=analyticsData.summary||{};els.stats.innerHTML=[metric(s.online_now||0,'Online now','online'),metric(s.sessions_today||0,'Sessions today'),metric(s.sessions_period||0,'Sessions in range'),metric(s.unique_visitors||0,'Unique visitors'),metric(s.searches_period||0,'Searches'),metric(s.returning_visitors||0,'Returning visitors')].join('');renderChart();renderPopular();renderTable()}
+  function render(){const s=analyticsData.summary||{};els.stats.innerHTML=[metric(s.online_now||0,'Online now','online'),metric(s.sessions_today||0,'Sessions today'),metric(s.sessions_period||0,'Sessions in range'),metric(s.unique_visitors||0,'Unique visitors'),metric(s.searches_period||0,'Searches'),metric(s.returning_visitors||0,'Returning visitors')].join('');renderChart();renderPopular();renderTable();renderFeedbackTable()}
   function metric(value,label,cls=''){return `<article class="admin-metric ${cls}"><div class="value">${Number(value||0).toLocaleString('en-GB')}</div><div class="label">${escapeHtml(label)}</div></article>`}
   function renderChart(){const days=analyticsData.daily||[];const max=Math.max(1,...days.map(d=>Number(d.sessions||0)));els.chartTotal.textContent=days.reduce((n,d)=>n+Number(d.sessions||0),0)+' sessions';els.bars.innerHTML=days.map(d=>{const h=Math.max(3,Math.round(Number(d.sessions||0)/max*130));const label=new Date((d.report_day||d.day)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});return `<div class="admin-bar-col"><div class="admin-bar" style="height:${h}px" data-value="${Number(d.sessions||0)}"></div><span class="admin-bar-label">${label}</span></div>`}).join('')||'<div class="admin-empty">No data</div>'}
   function renderPopular(){const list=analyticsData.popular||[];els.popular.innerHTML=list.length?list.map(x=>`<div class="admin-list-row"><b title="${escapeHtml(x.label||'Unknown')}">${escapeHtml(x.label||'Unknown')}</b><span>${Number(x.count||0).toLocaleString('en-GB')}</span></div>`).join(''):'<div class="admin-empty">No searches yet.</div>'}
   function renderTable(){const rows=filteredRows();els.tableCount.textContent=rows.length+' records';if(!rows.length){els.table.innerHTML='<div class="admin-empty">No activity matches this filter.</div>';return}els.table.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Type</th><th>User postcode</th><th>Search postcode</th><th>Search / page</th><th>Browser</th><th>Device</th><th>Timezone</th><th>Visitor</th></tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><span class="admin-badge">${escapeHtml(r.type)}</span></td><td>${escapeHtml(r.user_postcode||'—')}</td><td>${escapeHtml(r.postcode||'—')}</td><td>${escapeHtml(r.search_query||r.resolved_label||r.page_path||'—')}</td><td>${escapeHtml(r.browser||'—')}</td><td>${escapeHtml(r.device_type||'—')}</td><td class="muted">${escapeHtml(r.timezone||'—')}</td><td class="muted" title="${escapeHtml(r.visitor_id||'')}">${escapeHtml((r.visitor_id||'').slice(0,8)||'—')}</td></tr>`).join('')}</tbody></table>`}
+  function renderFeedbackTable(){const rows=(analyticsData.feedback||[]).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));els.feedbackCount.textContent=rows.length+' records';if(!rows.length){els.feedbackTable.innerHTML='<div class="admin-empty">No feedback submitted yet.</div>';return}els.feedbackTable.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Name</th><th>Email</th><th>Mobile</th><th>Message</th></tr></thead><tbody>${rows.slice(0,500).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.name||'—')}</td><td>${escapeHtml(r.email||'—')}</td><td>${escapeHtml(r.mobile||'—')}</td><td>${escapeHtml(r.message||'—')}</td></tr>`).join('')}</tbody></table>`}
   function formatDate(v){if(!v)return'—';return new Date(v).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -3660,16 +3619,12 @@ create table if not exists public.nt_search_events(
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.nt_user_feedback(
+create table if not exists public.nt_feedback(
   id bigint generated always as identity primary key,
   name text not null,
   email text not null,
   mobile text,
   message text,
-  page_path text,
-  user_postcode text,
-  browser text,
-  device_type text,
   created_at timestamptz not null default now()
 );
 
@@ -3682,17 +3637,17 @@ create index if not exists nt_sessions_visitor_idx on public.nt_visitor_sessions
 create index if not exists nt_sessions_last_seen_idx on public.nt_visitor_sessions(last_seen_at desc);
 create index if not exists nt_search_created_idx on public.nt_search_events(created_at desc);
 create index if not exists nt_search_session_idx on public.nt_search_events(session_id);
-create index if not exists nt_feedback_created_idx on public.nt_user_feedback(created_at desc);
+create index if not exists nt_feedback_created_idx on public.nt_feedback(created_at desc);
 
 alter table public.nt_admin_settings enable row level security;
 alter table public.nt_visitor_sessions enable row level security;
 alter table public.nt_search_events enable row level security;
-alter table public.nt_user_feedback enable row level security;
+alter table public.nt_feedback enable row level security;
 
 revoke all on public.nt_admin_settings from anon, authenticated;
 revoke all on public.nt_visitor_sessions from anon, authenticated;
 revoke all on public.nt_search_events from anon, authenticated;
-revoke all on public.nt_user_feedback from anon, authenticated;
+revoke all on public.nt_feedback from anon, authenticated;
 
 insert into public.nt_admin_settings(id,admin_key_hash,updated_at)
 values(1,'${hash}',now())
@@ -3758,70 +3713,6 @@ begin
 end;
 $$;
 
-create or replace function public.submit_user_feedback(
-  p_name text,p_email text,p_mobile text default '',p_message text default '',
-  p_page_path text default '/',p_user_postcode text default '',p_browser text default '',p_device_type text default ''
-)
-returns boolean
-language plpgsql
-security definer
-set search_path=public
-as $$
-begin
-  if length(trim(coalesce(p_name,'')))<2 or length(trim(coalesce(p_name,'')))>70 then return false; end if;
-  if length(trim(coalesce(p_email,'')))>120 or trim(coalesce(p_email,'')) !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+[.][A-Z]{2,}$' then return false; end if;
-  if length(coalesce(p_mobile,''))>24 or length(coalesce(p_message,''))>500 then return false; end if;
-  insert into public.nt_user_feedback(name,email,mobile,message,page_path,user_postcode,browser,device_type)
-  values(trim(p_name),lower(trim(p_email)),nullif(trim(p_mobile),''),nullif(trim(p_message),''),left(coalesce(p_page_path,'/'),300),nullif(left(upper(trim(coalesce(p_user_postcode,''))),16),''),left(coalesce(p_browser,''),80),left(coalesce(p_device_type,''),40));
-  return true;
-end;
-$$;
-
-
-create or replace function public.get_admin_feedback(p_key_hash text)
-returns jsonb
-language plpgsql
-security definer
-set search_path=public
-as $$
-begin
-  if not public.verify_admin_key(p_key_hash) then
-    return jsonb_build_object('authorised',false);
-  end if;
-  return jsonb_build_object(
-    'authorised',true,
-    'feedback',coalesce((
-      select jsonb_agg(to_jsonb(f) order by f.created_at desc)
-      from (
-        select id,name,email,mobile,message,page_path,user_postcode,browser,device_type,created_at
-        from public.nt_user_feedback
-        order by created_at desc
-        limit 1000
-      ) f
-    ),'[]'::jsonb)
-  );
-end;
-$$;
-
-create or replace function public.delete_admin_visitor_activity(p_key_hash text)
-returns jsonb
-language plpgsql
-security definer
-set search_path=public
-as $$
-declare
-  v_searches bigint:=0;
-  v_sessions bigint:=0;
-begin
-  if not public.verify_admin_key(p_key_hash) then return jsonb_build_object('authorised',false); end if;
-  delete from public.nt_search_events;
-  get diagnostics v_searches = row_count;
-  delete from public.nt_visitor_sessions;
-  get diagnostics v_sessions = row_count;
-  return jsonb_build_object('authorised',true,'searches_deleted',v_searches,'sessions_deleted',v_sessions);
-end;
-$$;
-
 create or replace function public.change_admin_key(p_current_hash text,p_new_hash text)
 returns boolean
 language plpgsql
@@ -3834,6 +3725,91 @@ begin
   set admin_key_hash=p_new_hash,updated_at=now()
   where id=1 and admin_key_hash=p_current_hash;
   return found;
+end;
+$$;
+
+create or replace function public.submit_feedback(
+  p_name text,p_email text,p_mobile text,p_message text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_name text;
+  v_email text;
+begin
+  v_name:=left(trim(coalesce(p_name,'')),60);
+  v_email:=left(trim(coalesce(p_email,'')),120);
+  if v_name='' or v_email='' then return false; end if;
+  if v_email !~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then return false; end if;
+  insert into public.nt_feedback(name,email,mobile,message)
+  values(
+    v_name,v_email,
+    nullif(left(trim(coalesce(p_mobile,'')),20),''),
+    nullif(left(trim(coalesce(p_message,'')),500),'')
+  );
+  return true;
+end;
+$$;
+
+create or replace function public.clear_visitor_activity(
+  p_key_hash text,p_older_than_days integer default 0
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_cut timestamptz;
+  v_sessions integer;
+  v_searches integer;
+begin
+  if not public.verify_admin_key(p_key_hash) then
+    return jsonb_build_object('authorised',false);
+  end if;
+  if coalesce(p_older_than_days,0)<=0 then
+    delete from public.nt_search_events;
+    get diagnostics v_searches = row_count;
+    delete from public.nt_visitor_sessions;
+    get diagnostics v_sessions = row_count;
+  else
+    v_cut:=now()-(p_older_than_days||' days')::interval;
+    delete from public.nt_search_events where created_at<v_cut;
+    get diagnostics v_searches = row_count;
+    delete from public.nt_visitor_sessions where started_at<v_cut;
+    get diagnostics v_sessions = row_count;
+  end if;
+  return jsonb_build_object('authorised',true,'sessions_deleted',v_sessions,'searches_deleted',v_searches);
+end;
+$$;
+
+create or replace function public.clear_feedback(
+  p_key_hash text,p_older_than_days integer default 0
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_cut timestamptz;
+  v_count integer;
+begin
+  if not public.verify_admin_key(p_key_hash) then
+    return jsonb_build_object('authorised',false);
+  end if;
+  if coalesce(p_older_than_days,0)<=0 then
+    delete from public.nt_feedback;
+    get diagnostics v_count = row_count;
+  else
+    v_cut:=now()-(p_older_than_days||' days')::interval;
+    delete from public.nt_feedback where created_at<v_cut;
+    get diagnostics v_count = row_count;
+  end if;
+  return jsonb_build_object('authorised',true,'feedback_deleted',v_count);
 end;
 $$;
 
@@ -3867,7 +3843,8 @@ begin
       (select count(*) from (
         select visitor_id from public.nt_visitor_sessions where started_at>=v_from
         group by visitor_id having count(*)>1
-      ) x) returning_visitors
+      ) x) returning_visitors,
+      (select count(*) from public.nt_feedback where created_at>=v_from) feedback_total
   ),
   daily as (
     select gs.report_day::date as report_day,
@@ -3893,7 +3870,9 @@ begin
     'searches',coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at desc)
       from (select * from public.nt_search_events where created_at>=v_from order by created_at desc limit 1000) e),'[]'::jsonb),
     'daily',coalesce((select jsonb_agg(to_jsonb(d) order by d.report_day) from daily d),'[]'::jsonb),
-    'popular',coalesce((select jsonb_agg(to_jsonb(p)) from popular p),'[]'::jsonb)
+    'popular',coalesce((select jsonb_agg(to_jsonb(p)) from popular p),'[]'::jsonb),
+    'feedback',coalesce((select jsonb_agg(to_jsonb(f) order by f.created_at desc)
+      from (select * from public.nt_feedback order by created_at desc limit 500) f),'[]'::jsonb)
   ) into v_result;
   return v_result;
 end;
@@ -3902,20 +3881,20 @@ $$;
 revoke all on function public.verify_admin_key(text) from public;
 revoke all on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text,text) from public;
 revoke all on function public.log_search_event(uuid,uuid,text,text,text,text) from public;
-revoke all on function public.submit_user_feedback(text,text,text,text,text,text,text,text) from public;
-revoke all on function public.get_admin_feedback(text) from public;
-revoke all on function public.delete_admin_visitor_activity(text) from public;
 revoke all on function public.change_admin_key(text,text) from public;
 revoke all on function public.get_admin_analytics(text,integer,integer) from public;
+revoke all on function public.submit_feedback(text,text,text,text) from public;
+revoke all on function public.clear_visitor_activity(text,integer) from public;
+revoke all on function public.clear_feedback(text,integer) from public;
 
 grant execute on function public.verify_admin_key(text) to anon,authenticated;
 grant execute on function public.track_visitor_session(uuid,uuid,text,text,text,text,text,text,text) to anon,authenticated;
 grant execute on function public.log_search_event(uuid,uuid,text,text,text,text) to anon,authenticated;
-grant execute on function public.submit_user_feedback(text,text,text,text,text,text,text,text) to anon,authenticated;
-grant execute on function public.get_admin_feedback(text) to anon,authenticated;
-grant execute on function public.delete_admin_visitor_activity(text) to anon,authenticated;
 grant execute on function public.change_admin_key(text,text) to anon,authenticated;
 grant execute on function public.get_admin_analytics(text,integer,integer) to anon,authenticated;
+grant execute on function public.submit_feedback(text,text,text,text) to anon,authenticated;
+grant execute on function public.clear_visitor_activity(text,integer) to anon,authenticated;
+grant execute on function public.clear_feedback(text,integer) to anon,authenticated;
 
 commit;`;
   }
@@ -3956,49 +3935,58 @@ commit;`;
     catch(e){$('adminSqlOutput').focus();$('adminSqlOutput').select();document.execCommand('copy');toast('SQL copied.')}
   });
 
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!els.recovery.hidden){els.recovery.hidden=true;openLogin()}else if(!els.settings.hidden)els.settings.hidden=true;else if(!els.dash.hidden)closeDash();else if(!els.login.hidden)closeLogin()}});
+  function openClearDialog(kind){
+    pendingClearAction=kind;
+    $('adminClearRange').value='0';
+    $('adminClearError').textContent='';
+    $('adminClearTitle').textContent = kind==='feedback' ? 'Delete feedback messages' : 'Delete visitor activity';
+    $('adminClearBody').innerHTML = kind==='feedback'
+      ? 'This permanently deletes stored <b>feedback messages</b> from Supabase so they stop taking up database space. This cannot be undone.'
+      : 'This permanently deletes stored <b>visitor sessions and searches</b> from Supabase so they stop taking up database space. This cannot be undone.';
+    els.clear.hidden=false;
+  }
+  function closeClearDialog(){els.clear.hidden=true;pendingClearAction=null}
+  $('adminClearActivityBtn').addEventListener('click',()=>openClearDialog('activity'));
+  $('adminClearFeedbackBtn').addEventListener('click',()=>openClearDialog('feedback'));
+  $('adminClearCancel').addEventListener('click',closeClearDialog);
+  els.clear.addEventListener('click',e=>{if(e.target===els.clear)closeClearDialog()});
+  $('adminClearConfirm').addEventListener('click',async()=>{
+    const error=$('adminClearError');error.textContent='';
+    if(!client){error.textContent='Supabase is not configured in this file.';return}
+    if(!pendingClearAction)return;
+    const days=parseInt($('adminClearRange').value,10)||0;
+    const btn=$('adminClearConfirm');btn.disabled=true;
+    try{
+      const rpcName = pendingClearAction==='feedback' ? 'clear_feedback' : 'clear_visitor_activity';
+      const {data,error:rpcError}=await client.rpc(rpcName,{p_key_hash:adminHash,p_older_than_days:days});
+      if(rpcError)throw rpcError;
+      if(!data||data.authorised===false){error.textContent='Admin session is no longer authorised.';return}
+      const deletedCount = pendingClearAction==='feedback' ? (data.feedback_deleted||0) : ((data.sessions_deleted||0)+(data.searches_deleted||0));
+      closeClearDialog();
+      toast(deletedCount+' record(s) deleted from Supabase.');
+      await openDashboard();
+    }catch(ex){error.textContent=ex.message||'Could not delete records.'}
+    finally{btn.disabled=false}
+  });
+
+  async function submitFeedback(payload){
+    if(!client)throw new Error('Supabase is not configured yet.');
+    const {data,error}=await client.rpc('submit_feedback',{
+      p_name:clean(payload.name,60),
+      p_email:clean(payload.email,120),
+      p_mobile:clean(payload.mobile,20),
+      p_message:clean(payload.message,500)
+    });
+    if(error)throw new Error(error.message);
+    if(data!==true)throw new Error('Please check your name and email address.');
+    return true;
+  }
+  window.NTAnalytics.submitFeedback=submitFeedback;
+
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!els.clear.hidden)closeClearDialog();else if(!els.recovery.hidden){els.recovery.hidden=true;openLogin()}else if(!els.settings.hidden)els.settings.hidden=true;else if(!els.dash.hidden)closeDash();else if(!els.login.hidden)closeLogin()}});
 })();
 </script>
 
-<script>
-(function(){
-  const openBtn=document.getElementById('feedbackLaunchBtn');
-  const overlay=document.getElementById('feedbackOverlay');
-  const closeBtn=document.getElementById('feedbackCloseBtn');
-  const cancelBtn=document.getElementById('feedbackCancelBtn');
-  const form=document.getElementById('feedbackForm');
-  const message=document.getElementById('feedbackMessage');
-  const counter=document.getElementById('feedbackCounter');
-  const error=document.getElementById('feedbackError');
-  const submit=document.getElementById('feedbackSubmitBtn');
-  if(!openBtn||!overlay||!form)return;
-  const dialog=overlay.querySelector('.feedback-dialog');
-  let previousFocus=null;
-  function updateCounter(){const n=message.value.length;counter.textContent=n+' / 500';counter.classList.toggle('limit',n>=480)}
-  function openFeedback(){previousFocus=document.activeElement;error.textContent='';overlay.hidden=false;document.body.style.overflow='hidden';updateCounter();requestAnimationFrame(()=>document.getElementById('feedbackName').focus())}
-  function closeFeedback(){overlay.hidden=true;document.body.style.overflow='';if(previousFocus&&previousFocus.focus)previousFocus.focus()}
-  openBtn.addEventListener('click',openFeedback);closeBtn.addEventListener('click',closeFeedback);cancelBtn.addEventListener('click',closeFeedback);
-  overlay.addEventListener('click',e=>{if(e.target===overlay)closeFeedback()});message.addEventListener('input',updateCounter);
-  form.addEventListener('submit',async e=>{
-    e.preventDefault();error.textContent='';
-    const name=document.getElementById('feedbackName').value.trim();
-    const email=document.getElementById('feedbackEmail').value.trim();
-    const mobile=document.getElementById('feedbackMobile').value.trim();
-    const text=message.value.trim();
-    if(name.length<2){error.textContent='Please enter your name (at least 2 characters).';document.getElementById('feedbackName').focus();return}
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){error.textContent='Please enter a valid email address.';document.getElementById('feedbackEmail').focus();return}
-    if(mobile&&!/^[+()\d\s-]{6,24}$/.test(mobile)){error.textContent='Please check the mobile number or leave it blank.';document.getElementById('feedbackMobile').focus();return}
-    submit.disabled=true;const original=submit.textContent;submit.textContent='Sending…';
-    try{
-      if(!window.NTFeedback)throw new Error('Feedback service is not ready. Please try again.');
-      await window.NTFeedback.submit({name,email,mobile,message:text});
-      form.reset();updateCounter();closeFeedback();
-      const toast=document.getElementById('adminToast');if(toast){toast.textContent='Thank you. Your feedback has been sent.';toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3000)}
-    }catch(ex){error.textContent=ex.message||'Your feedback could not be sent. Please try again.'}finally{submit.disabled=false;submit.textContent=original}
-  });
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden){e.preventDefault();closeFeedback()}});
-})();
-</script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("adminReloadBtn");if(!b)return;b.onclick=()=>{b.disabled=true;const h=b.innerHTML;b.innerHTML="⟳ Refreshing...";if(typeof window.loadAnalytics==="function"){Promise.resolve(window.loadAnalytics(true)).finally(()=>{b.disabled=false;b.innerHTML=h;});}else{location.reload();}};});</script>
 <script>
 (function(){
@@ -4014,6 +4002,81 @@ commit;`;
   closeBtn.addEventListener('click',closeHelp);
   overlay.addEventListener('click',e=>{if(e.target===overlay)closeHelp();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden){e.preventDefault();closeHelp();}});
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+  const openBtn=document.getElementById('feedbackLaunchBtn');
+  const overlay=document.getElementById('feedbackOverlay');
+  const closeBtn=document.getElementById('feedbackClose');
+  const doneBtn=document.getElementById('feedbackDone');
+  const formView=document.getElementById('feedbackFormView');
+  const successView=document.getElementById('feedbackSuccess');
+  const form=document.getElementById('feedbackForm');
+  const submitBtn=document.getElementById('feedbackSubmit');
+  const errorBox=document.getElementById('feedbackError');
+  if(!openBtn||!overlay||!form)return;
+
+  const fields=[
+    {id:'fbName',countId:'fbNameCount',max:60},
+    {id:'fbEmail',countId:'fbEmailCount',max:120},
+    {id:'fbMobile',countId:'fbMobileCount',max:20},
+    {id:'fbMessage',countId:'fbMessageCount',max:500}
+  ];
+  fields.forEach(f=>{
+    const el=document.getElementById(f.id);
+    const counter=document.getElementById(f.countId);
+    if(!el||!counter)return;
+    const update=()=>{counter.textContent=el.value.length+' / '+f.max;el.classList.remove('invalid')};
+    el.addEventListener('input',update);
+    update();
+  });
+
+  let previousFocus=null;
+  function resetForm(){
+    form.reset();
+    fields.forEach(f=>{const el=document.getElementById(f.id);const c=document.getElementById(f.countId);if(el)el.classList.remove('invalid');if(c)c.textContent='0 / '+f.max});
+    errorBox.textContent='';
+    formView.hidden=false;
+    successView.hidden=true;
+  }
+  function openFeedback(){previousFocus=document.activeElement;resetForm();overlay.hidden=false;document.body.style.overflow='hidden';const first=document.getElementById('fbName');if(first)setTimeout(()=>first.focus(),30)}
+  function closeFeedback(){overlay.hidden=true;document.body.style.overflow='';if(previousFocus&&previousFocus.focus)previousFocus.focus()}
+  openBtn.addEventListener('click',openFeedback);
+  closeBtn.addEventListener('click',closeFeedback);
+  doneBtn.addEventListener('click',closeFeedback);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)closeFeedback()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden){e.preventDefault();closeFeedback()}});
+
+  function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
+
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    errorBox.textContent='';
+    const nameEl=document.getElementById('fbName');
+    const emailEl=document.getElementById('fbEmail');
+    const mobileEl=document.getElementById('fbMobile');
+    const messageEl=document.getElementById('fbMessage');
+    const name=nameEl.value.trim();
+    const email=emailEl.value.trim();
+    nameEl.classList.toggle('invalid',!name);
+    emailEl.classList.toggle('invalid',!email||!isValidEmail(email));
+    if(!name){errorBox.textContent='Please enter your name.';nameEl.focus();return}
+    if(!email||!isValidEmail(email)){errorBox.textContent='Please enter a valid email address.';emailEl.focus();return}
+    if(!window.NTAnalytics||typeof window.NTAnalytics.submitFeedback!=='function'){errorBox.textContent='Feedback service is not available right now.';return}
+    submitBtn.disabled=true;submitBtn.textContent='Sending…';
+    try{
+      await window.NTAnalytics.submitFeedback({name,email,mobile:mobileEl.value.trim(),message:messageEl.value.trim()});
+      formView.hidden=true;
+      successView.hidden=false;
+    }catch(ex){
+      errorBox.textContent=ex.message||'Could not send your feedback. Please try again.';
+    }finally{
+      submitBtn.disabled=false;submitBtn.textContent='Send feedback';
+    }
+  });
 })();
 </script>
 </body>
