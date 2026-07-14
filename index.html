@@ -1142,6 +1142,42 @@
   .help-language.fa .help-step{grid-template-columns:39px minmax(0,1fr)}
   .help-step-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,rgba(26,95,180,.12),rgba(27,58,47,.09));color:var(--route-blue)}
   .help-step-icon svg{width:19px;height:19px}
+
+  /* Exact Postcode location-button preview used inside Help */
+  .help-locate-demo-wrap{
+    width:39px;
+    min-width:39px;
+    height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+  }
+  .locate-btn.help-locate-demo{
+    position:relative;
+    right:auto;
+    top:auto;
+    transform:none;
+    flex:0 0 34px;
+    pointer-events:none;
+    cursor:default;
+    /* Match the visible blue Postcode control exactly. */
+    background:var(--route-blue);
+    color:#fff;
+    border-color:var(--route-blue);
+    box-shadow:0 0 0 4px rgba(26,95,180,.14),0 5px 14px rgba(26,95,180,.28);
+  }
+  .locate-btn.help-locate-demo::before{
+    border-color:rgba(26,95,180,.28);
+  }
+  .locate-btn.help-locate-demo::after{
+    border-top-color:#fff;
+    border-right-color:rgba(255,255,255,.45);
+  }
+  .locate-btn.help-locate-demo:hover,
+  .locate-btn.help-locate-demo:active{
+    transform:none;
+  }
   .help-step h4{margin:0 0 4px;color:var(--ink);font-size:13px}.help-step p{margin:0;color:var(--muted);font-size:11.8px;line-height:1.62}
   .help-key{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border:1px solid rgba(26,95,180,.25);border-radius:999px;background:rgba(26,95,180,.06);color:var(--route-blue);font-size:10.5px;font-weight:800;white-space:nowrap}
   .help-example{margin-top:12px;padding:11px 12px;border-radius:11px;background:rgba(27,58,47,.055);border:1px solid rgba(27,58,47,.11);color:#554F43;font-size:11.5px;line-height:1.55}
@@ -1264,7 +1300,7 @@ Helping local businesses grow with free website design, flyer design and custom 
     <div class="help-content">
       <section class="help-language" lang="en-GB">
         <div class="help-lang-head"><h3>How to use Nearest To</h3><span class="help-lang-badge">ENGLISH</span></div>
-        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>1. Find your postcode</h4><p>If you do not know the postcode, press the blue <span class="help-key">Location 📍</span> button beside the Postcode box. Allow location access. The website will enter your postcode automatically. You may also type any UK postcode yourself.</p></div></div>
+        <div class="help-step"><span class="help-locate-demo-wrap" aria-hidden="true"><button type="button" class="locate-btn help-locate-demo" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span><div><h4>1. Find your postcode</h4><p>If you do not know the postcode, press the identical blue location button shown here, beside the <span class="help-key">Postcode</span> box. Allow location access. The website will enter your postcode automatically. You may also type any UK postcode yourself.</p></div></div>
         <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>2. Enter what you need</h4><p>In the <span class="help-key">Looking for</span> box, type a simple English word such as dentist, pharmacy, supermarket, GP, restaurant, school or taxi.</p></div></div>
         <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>3. Start the search</h4><p>Press <span class="help-key">Find nearest</span>. The nearest places will appear with their address, distance, website and map route when available.</p></div></div>
         <div class="help-example"><b>Example:</b> Enter <b>PR1 2HE</b>, type <b>pharmacy</b>, then press <b>Find nearest</b>.</div>
@@ -1272,7 +1308,7 @@ Helping local businesses grow with free website design, flyer design and custom 
 
       <section class="help-language fa" lang="fa">
         <div class="help-lang-head"><h3>چگونه از سایت استفاده کنیم؟</h3><span class="help-lang-badge">فارسی</span></div>
-        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>۱. پیدا کردن کدپستی</h4><p>اگر کدپستی محل خود را نمی‌دانید، روی دکمه آبی <span class="help-key">موقعیت مکانی 📍</span> کنار کادر Postcode بزنید. سپس اجازه دسترسی به Location را بدهید تا کدپستی شما به‌صورت خودکار وارد شود. همچنین می‌توانید هر کدپستی بریتانیا را دستی بنویسید.</p></div></div>
+        <div class="help-step"><span class="help-locate-demo-wrap" aria-hidden="true"><button type="button" class="locate-btn help-locate-demo" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span><div><h4>۱. پیدا کردن کدپستی</h4><p>اگر کدپستی محل خود را نمی‌دانید، روی همین دکمه آبی موقعیت مکانی که در اینجا می‌بینید و کنار کادر <span class="help-key">Postcode</span> قرار دارد بزنید. سپس اجازه دسترسی به Location را بدهید تا کدپستی شما به‌صورت خودکار وارد شود. همچنین می‌توانید هر کدپستی بریتانیا را دستی بنویسید.</p></div></div>
         <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>۲. نوشتن چیزی که می‌خواهید</h4><p>در کادر <span class="help-key">Looking for</span> نام محل یا خدمات را با یک کلمه ساده انگلیسی بنویسید؛ مانند dentist، pharmacy، supermarket، GP، restaurant، school یا taxi.</p></div></div>
         <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>۳. شروع جستجو</h4><p>روی دکمه <span class="help-key">Find nearest</span> بزنید. نزدیک‌ترین مکان‌ها همراه با آدرس، فاصله، وب‌سایت و مسیر نقشه، در صورت موجود بودن، نمایش داده می‌شوند.</p></div></div>
         <div class="help-example"><b>مثال:</b> کدپستی <b>PR1 2HE</b> را وارد کنید، کلمه <b>pharmacy</b> را بنویسید و سپس <b>Find nearest</b> را بزنید.</div>
