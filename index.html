@@ -1106,6 +1106,53 @@
   .admin-recovery-steps b{color:var(--ink)}
   @media(max-width:620px){.admin-recovery{border-radius:20px 20px 0 0;padding:20px 16px}.admin-recovery-grid{grid-template-columns:1fr}.admin-sql-output{min-height:180px}}
 
+
+  /* ---- Professional bilingual help guide ---- */
+  .header-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .help-launch-btn{
+    position:relative;display:inline-flex;align-items:center;gap:8px;min-height:38px;
+    padding:7px 11px 7px 8px;border:1px solid rgba(26,95,180,.28);border-radius:999px;
+    background:linear-gradient(145deg,#fff,#F4F8FD);color:var(--route-blue);cursor:pointer;
+    font:800 11.5px/1 'Inter',sans-serif;letter-spacing:.01em;
+    box-shadow:0 5px 16px rgba(26,95,180,.12);transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+  }
+  .help-launch-btn:hover{transform:translateY(-1px);background:#fff;box-shadow:0 8px 22px rgba(26,95,180,.2)}
+  .help-launch-btn:active{transform:scale(.97)}
+  .help-launch-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--route-blue);color:#fff;box-shadow:0 0 0 4px rgba(26,95,180,.09)}
+  .help-launch-icon svg{width:15px;height:15px}
+  .help-launch-text{display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .help-launch-text b{color:var(--os-green)}
+  .help-launch-sep{opacity:.38}
+  .help-pulse{position:absolute;right:1px;top:0;width:8px;height:8px;border-radius:50%;background:var(--postbox-red);box-shadow:0 0 0 4px rgba(200,16,46,.1)}
+
+  .help-overlay{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:18px;background:rgba(12,24,19,.7);backdrop-filter:blur(10px)}
+  .help-overlay[hidden]{display:none}
+  .help-dialog{width:min(920px,100%);max-height:min(91vh,860px);overflow:auto;background:#FCFBF7;border:1px solid rgba(255,255,255,.45);border-radius:22px;box-shadow:0 34px 95px rgba(0,0,0,.4)}
+  .help-dialog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;background:linear-gradient(135deg,var(--os-green),#295240);color:#fff;border-radius:22px 22px 0 0}
+  .help-dialog-title{display:flex;align-items:center;gap:11px}.help-dialog-title-icon{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.14)}
+  .help-dialog-title h2{margin:0;font:800 20px/1.1 'Archivo Narrow',sans-serif}.help-dialog-title p{margin:3px 0 0;color:rgba(255,255,255,.72);font-size:11.5px}
+  .help-close-btn{width:37px;height:37px;border:1px solid rgba(255,255,255,.2);border-radius:11px;background:rgba(255,255,255,.09);color:#fff;font-size:22px;line-height:1;cursor:pointer}.help-close-btn:hover{background:rgba(255,255,255,.18)}
+  .help-content{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;background:#F4F1E8}
+  .help-language{background:#fff;border:1px solid #DED8C8;border-radius:16px;padding:16px;box-shadow:0 4px 14px rgba(27,58,47,.045)}
+  .help-language.fa{direction:rtl;text-align:right;font-family:Tahoma,'Inter',sans-serif}
+  .help-lang-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid #EAE5D9}
+  .help-lang-head h3{margin:0;color:var(--os-green);font:800 17px 'Archivo Narrow',sans-serif}.help-language.fa .help-lang-head h3{font-family:Tahoma,'Inter',sans-serif;font-size:15px}
+  .help-lang-badge{padding:4px 8px;border-radius:999px;background:rgba(26,95,180,.08);color:var(--route-blue);font-size:10px;font-weight:800}
+  .help-step{display:grid;grid-template-columns:39px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid #F0ECE2}.help-step:last-of-type{border-bottom:0}
+  .help-language.fa .help-step{grid-template-columns:39px minmax(0,1fr)}
+  .help-step-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,rgba(26,95,180,.12),rgba(27,58,47,.09));color:var(--route-blue)}
+  .help-step-icon svg{width:19px;height:19px}
+  .help-step h4{margin:0 0 4px;color:var(--ink);font-size:13px}.help-step p{margin:0;color:var(--muted);font-size:11.8px;line-height:1.62}
+  .help-key{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border:1px solid rgba(26,95,180,.25);border-radius:999px;background:rgba(26,95,180,.06);color:var(--route-blue);font-size:10.5px;font-weight:800;white-space:nowrap}
+  .help-example{margin-top:12px;padding:11px 12px;border-radius:11px;background:rgba(27,58,47,.055);border:1px solid rgba(27,58,47,.11);color:#554F43;font-size:11.5px;line-height:1.55}
+  .help-example b{color:var(--os-green)}
+  .help-footer-note{grid-column:1/-1;display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:12px;background:#FFF8E8;border:1px solid #E7D39B;color:#6F5B26;font-size:11.5px;line-height:1.5}
+  .help-footer-note svg{flex:0 0 auto;color:#A57800}
+  @media(max-width:720px){
+    .header-actions{gap:6px}.help-launch-btn{padding:6px 8px}.help-launch-text .full-label{display:none}.help-launch-text{font-size:10px}.help-content{grid-template-columns:1fr;padding:10px}.help-footer-note{grid-column:auto}.help-dialog{max-height:96vh;border-radius:20px 20px 0 0}.help-overlay{align-items:end;padding:0}.help-dialog-head{border-radius:20px 20px 0 0}.help-language{padding:13px}
+  }
+  @media(max-width:410px){.gb-tab{display:none}.help-launch-btn{min-height:36px}.help-launch-icon{width:23px;height:23px}}
+
 </style>
 </head>
 <body>
@@ -1120,7 +1167,14 @@
         <p class="tagline">Find anything near a UK postcode</p>
       </div>
     </div>
-    <div class="gb-tab">UK ONLY</div>
+    <div class="header-actions">
+      <button type="button" class="help-launch-btn" id="helpLaunchBtn" aria-haspopup="dialog" aria-controls="helpOverlay" title="Help and guide | راهنما">
+        <span class="help-launch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M9.8 9a2.35 2.35 0 114.1 1.57c-.75.75-1.9 1.17-1.9 2.43" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></span>
+        <span class="help-launch-text"><b class="full-label">Help</b><span class="help-launch-sep">|</span><b>راهنما</b><span class="help-launch-sep">EN/FA</span></span>
+        <span class="help-pulse" aria-hidden="true"></span>
+      </button>
+      <div class="gb-tab">UK ONLY</div>
+    </div>
   </header>
 
   <div class="panel">
@@ -1194,6 +1248,38 @@ Helping local businesses grow with free website design, flyer design and custom 
 </div>
 </footer>
 
+</div>
+
+
+
+<div class="help-overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpDialogTitle" hidden>
+  <div class="help-dialog" tabindex="-1">
+    <div class="help-dialog-head">
+      <div class="help-dialog-title">
+        <span class="help-dialog-title-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V4H6.5A2.5 2.5 0 004 6.5v13z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 8h8M8 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        <div><h2 id="helpDialogTitle">Help &amp; Guide | راهنمای استفاده</h2><p>Simple instructions in English and Persian</p></div>
+      </div>
+      <button type="button" class="help-close-btn" id="helpCloseBtn" aria-label="Close guide">×</button>
+    </div>
+    <div class="help-content">
+      <section class="help-language" lang="en-GB">
+        <div class="help-lang-head"><h3>How to use Nearest To</h3><span class="help-lang-badge">ENGLISH</span></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>1. Find your postcode</h4><p>If you do not know the postcode, press the blue <span class="help-key">Location 📍</span> button beside the Postcode box. Allow location access. The website will enter your postcode automatically. You may also type any UK postcode yourself.</p></div></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>2. Enter what you need</h4><p>In the <span class="help-key">Looking for</span> box, type a simple English word such as dentist, pharmacy, supermarket, GP, restaurant, school or taxi.</p></div></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>3. Start the search</h4><p>Press <span class="help-key">Find nearest</span>. The nearest places will appear with their address, distance, website and map route when available.</p></div></div>
+        <div class="help-example"><b>Example:</b> Enter <b>PR1 2HE</b>, type <b>pharmacy</b>, then press <b>Find nearest</b>.</div>
+      </section>
+
+      <section class="help-language fa" lang="fa">
+        <div class="help-lang-head"><h3>چگونه از سایت استفاده کنیم؟</h3><span class="help-lang-badge">فارسی</span></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>۱. پیدا کردن کدپستی</h4><p>اگر کدپستی محل خود را نمی‌دانید، روی دکمه آبی <span class="help-key">موقعیت مکانی 📍</span> کنار کادر Postcode بزنید. سپس اجازه دسترسی به Location را بدهید تا کدپستی شما به‌صورت خودکار وارد شود. همچنین می‌توانید هر کدپستی بریتانیا را دستی بنویسید.</p></div></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><h4>۲. نوشتن چیزی که می‌خواهید</h4><p>در کادر <span class="help-key">Looking for</span> نام محل یا خدمات را با یک کلمه ساده انگلیسی بنویسید؛ مانند dentist، pharmacy، supermarket، GP، restaurant، school یا taxi.</p></div></div>
+        <div class="help-step"><span class="help-step-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>۳. شروع جستجو</h4><p>روی دکمه <span class="help-key">Find nearest</span> بزنید. نزدیک‌ترین مکان‌ها همراه با آدرس، فاصله، وب‌سایت و مسیر نقشه، در صورت موجود بودن، نمایش داده می‌شوند.</p></div></div>
+        <div class="help-example"><b>مثال:</b> کدپستی <b>PR1 2HE</b> را وارد کنید، کلمه <b>pharmacy</b> را بنویسید و سپس <b>Find nearest</b> را بزنید.</div>
+      </section>
+      <div class="help-footer-note"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10.3 3.6L2.7 17a2 2 0 001.74 3h15.12a2 2 0 001.74-3L13.7 3.6a2 2 0 00-3.4 0z" stroke="currentColor" stroke-width="2"/></svg><span><b>Tip | نکته:</b> For better results, use short English search words. برای نتیجه بهتر، عبارت جستجو را کوتاه و به زبان انگلیسی وارد کنید.</span></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
@@ -3602,5 +3688,22 @@ commit;`;
 })();
 </script>
 
-<script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("adminReloadBtn");if(!b)return;b.onclick=()=>{b.disabled=true;const h=b.innerHTML;b.innerHTML="⟳ Refreshing...";if(typeof window.loadAnalytics==="function"){Promise.resolve(window.loadAnalytics(true)).finally(()=>{b.disabled=false;b.innerHTML=h;});}else{location.reload();}};});</script></body>
+<script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("adminReloadBtn");if(!b)return;b.onclick=()=>{b.disabled=true;const h=b.innerHTML;b.innerHTML="⟳ Refreshing...";if(typeof window.loadAnalytics==="function"){Promise.resolve(window.loadAnalytics(true)).finally(()=>{b.disabled=false;b.innerHTML=h;});}else{location.reload();}};});</script>
+<script>
+(function(){
+  const openBtn=document.getElementById('helpLaunchBtn');
+  const overlay=document.getElementById('helpOverlay');
+  const closeBtn=document.getElementById('helpCloseBtn');
+  if(!openBtn||!overlay||!closeBtn)return;
+  const dialog=overlay.querySelector('.help-dialog');
+  let previousFocus=null;
+  function openHelp(){previousFocus=document.activeElement;overlay.hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(()=>dialog.focus());}
+  function closeHelp(){overlay.hidden=true;document.body.style.overflow='';if(previousFocus&&previousFocus.focus)previousFocus.focus();}
+  openBtn.addEventListener('click',openHelp);
+  closeBtn.addEventListener('click',closeHelp);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)closeHelp();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden){e.preventDefault();closeHelp();}});
+})();
+</script>
+</body>
 </html>
