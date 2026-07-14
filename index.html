@@ -3619,8 +3619,8 @@ Helping local businesses grow with free website design, flyer design and custom 
     els.feedbackTable.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Name</th><th>Email</th><th>Mobile</th><th>Message</th><th>Actions</th></tr></thead><tbody>${rows.slice(0,500).map(r=>{
       const email=String(r.email||'').trim();
       const mobile=String(r.mobile||'').trim();
-      const subject=encodeURIComponent('Reply from Nearest To');
-      const body=encodeURIComponent(`Hello ${r.name||''},\n\nThank you for your feedback regarding Nearest To.\n\n`);
+      const subject=encodeURIComponent('Reply from Nearest To: https://arokhlo.github.io/nearest-to/');
+      const body=encodeURIComponent(`Hello ${r.name||''},\n\nThank you for your feedback regarding Nearest To: https://arokhlo.github.io/nearest-to/\n\n`);
       const replyHref=email?`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`:(mobile?`sms:${encodeURIComponent(mobile)}?body=${body}`:'#');
       return `<tr data-feedback-id="${Number(r.id)}"><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.name||'—')}</td><td>${email?`<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`:'—'}</td><td>${mobile?`<a href="tel:${escapeHtml(mobile)}">${escapeHtml(mobile)}</a>`:'—'}</td><td class="admin-feedback-message">${escapeHtml(r.message||'—')}</td><td><div class="admin-row-actions"><a class="admin-row-btn reply" href="${escapeHtml(replyHref)}" ${replyHref==='#'?'aria-disabled="true" onclick="return false"':''}>Reply</a><button type="button" class="admin-row-btn delete" data-delete-feedback="${Number(r.id)}" data-feedback-name="${escapeHtml(r.name||'this user')}">Delete</button></div></td></tr>`
     }).join('')}</tbody></table>`
