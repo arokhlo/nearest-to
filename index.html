@@ -1095,6 +1095,8 @@
   @media(max-width:900px){.admin-metrics{grid-template-columns:repeat(3,1fr)}.admin-grid{grid-template-columns:1fr}.admin-toolbar{grid-template-columns:1fr 1fr 1fr}.admin-toolbar .admin-search{grid-column:1/-1}}
   @media(max-width:620px){.admin-overlay{padding:0;align-items:flex-end}.admin-shell{max-height:96vh;border-radius:20px 20px 0 0}.admin-login{border-radius:20px 20px 0 0;padding:22px 18px}.admin-dashboard{height:96vh}.admin-head{padding:13px}.admin-head p,.admin-connection{display:none}.admin-body{padding:11px}.admin-metrics{grid-template-columns:repeat(2,1fr)}.admin-toolbar{grid-template-columns:1fr 1fr}.admin-toolbar .admin-search{grid-column:1/-1}.admin-toolbar .admin-btn{font-size:0}.admin-toolbar .admin-btn:before{font-size:15px}.admin-btn.refresh:before{content:"↻"}.admin-btn.export:before{content:"↓"}.admin-btn.settings:before{content:"⚙"}.admin-table-wrap{max-height:390px}.admin-settings-grid{grid-template-columns:1fr}}
 
+  .admin-btn.refresh-live{background:var(--route-blue);border-color:var(--route-blue);color:#fff}
+
   .admin-secondary-link{width:100%;margin-top:10px;border:0;background:transparent;color:var(--route-blue);font:700 12px 'Inter',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:7px;border-radius:8px}
   .admin-secondary-link:hover{background:rgba(26,95,180,.07)}
   .admin-recovery{width:min(720px,100%);padding:24px;background:#FCFBF7;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.5)}
@@ -3202,7 +3204,7 @@ Helping local businesses grow with free website design, flyer design and custom 
 
 <div class="admin-overlay" id="adminDashOverlay" hidden>
   <section class="admin-shell admin-dashboard" role="dialog" aria-modal="true" aria-labelledby="adminDashTitle">
-    <header class="admin-head"><div class="admin-head-main"><div class="admin-head-icon">⌁</div><div><h2 id="adminDashTitle">Nearest To Analytics</h2><p><span class="admin-connection"><i class="admin-dot" id="adminConnectionDot"></i><span id="adminConnectionText">Supabase connected</span></span> · privacy-friendly session statistics</p></div></div><div class="admin-head-actions"><button class="admin-icon-btn" id="adminDashClose" type="button" aria-label="Close dashboard">×</button></div></header>
+    <header class="admin-head"><div class="admin-head-main"><div class="admin-head-icon">⌁</div><div><h2 id="adminDashTitle">Nearest To Analytics</h2><p><span class="admin-connection"><i class="admin-dot" id="adminConnectionDot"></i><span id="adminConnectionText">Supabase connected</span></span> · privacy-friendly session statistics</p></div></div><div class="admin-head-actions"><button type="button" class="admin-btn refresh-live" id="adminReloadBtn" title="Reload analytics">⟳ Refresh</button><button class="admin-icon-btn" id="adminDashClose" type="button" aria-label="Close dashboard">×</button></div></header>
     <div class="admin-body">
       <section class="admin-metrics" id="adminStatsGrid"></section>
       <section class="admin-grid">
@@ -3600,5 +3602,5 @@ commit;`;
 })();
 </script>
 
-</body>
+<script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("adminReloadBtn");if(!b)return;b.onclick=()=>{b.disabled=true;const h=b.innerHTML;b.innerHTML="⟳ Refreshing...";if(typeof window.loadAnalytics==="function"){Promise.resolve(window.loadAnalytics(true)).finally(()=>{b.disabled=false;b.innerHTML=h;});}else{location.reload();}};});</script></body>
 </html>
