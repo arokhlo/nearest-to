@@ -3341,7 +3341,7 @@ Helping local businesses grow with free website design, flyer design and custom 
   function filteredRows(){const q=els.search.value.trim().toLowerCase();const sessionMap=new Map((analyticsData.sessions||[]).map(s=>[s.session_id,s]));const searches=(analyticsData.searches||[]).map(x=>({...sessionMap.get(x.session_id),...x,type:'Search'}));const sessions=(analyticsData.sessions||[]).map(x=>({...x,created_at:x.started_at,type:'Session'}));return [...searches,...sessions].filter(r=>!q||[r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone,r.visitor_id].join(' ').toLowerCase().includes(q)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
   function render(){const s=analyticsData.summary||{};els.stats.innerHTML=[metric(s.online_now||0,'Online now','online'),metric(s.sessions_today||0,'Sessions today'),metric(s.sessions_period||0,'Sessions in range'),metric(s.unique_visitors||0,'Unique visitors'),metric(s.searches_period||0,'Searches'),metric(s.returning_visitors||0,'Returning visitors')].join('');renderChart();renderPopular();renderTable()}
   function metric(value,label,cls=''){return `<article class="admin-metric ${cls}"><div class="value">${Number(value||0).toLocaleString('en-GB')}</div><div class="label">${escapeHtml(label)}</div></article>`}
-  function renderChart(){const days=analyticsData.daily||[];const max=Math.max(1,...days.map(d=>Number(d.sessions||0)));els.chartTotal.textContent=days.reduce((n,d)=>n+Number(d.sessions||0),0)+' sessions';els.bars.innerHTML=days.map(d=>{const h=Math.max(3,Math.round(Number(d.sessions||0)/max*130));const label=new Date(d.day+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});return `<div class="admin-bar-col"><div class="admin-bar" style="height:${h}px" data-value="${Number(d.sessions||0)}"></div><span class="admin-bar-label">${label}</span></div>`}).join('')||'<div class="admin-empty">No data</div>'}
+  function renderChart(){const days=analyticsData.daily||[];const max=Math.max(1,...days.map(d=>Number(d.sessions||0)));els.chartTotal.textContent=days.reduce((n,d)=>n+Number(d.sessions||0),0)+' sessions';els.bars.innerHTML=days.map(d=>{const h=Math.max(3,Math.round(Number(d.sessions||0)/max*130));const label=new Date((d.report_day||d.day)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});return `<div class="admin-bar-col"><div class="admin-bar" style="height:${h}px" data-value="${Number(d.sessions||0)}"></div><span class="admin-bar-label">${label}</span></div>`}).join('')||'<div class="admin-empty">No data</div>'}
   function renderPopular(){const list=analyticsData.popular||[];els.popular.innerHTML=list.length?list.map(x=>`<div class="admin-list-row"><b title="${escapeHtml(x.label||'Unknown')}">${escapeHtml(x.label||'Unknown')}</b><span>${Number(x.count||0).toLocaleString('en-GB')}</span></div>`).join(''):'<div class="admin-empty">No searches yet.</div>'}
   function renderTable(){const rows=filteredRows();els.tableCount.textContent=rows.length+' records';if(!rows.length){els.table.innerHTML='<div class="admin-empty">No activity matches this filter.</div>';return}els.table.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Type</th><th>User postcode</th><th>Search postcode</th><th>Search / page</th><th>Browser</th><th>Device</th><th>Timezone</th><th>Visitor</th></tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><span class="admin-badge">${escapeHtml(r.type)}</span></td><td>${escapeHtml(r.user_postcode||'—')}</td><td>${escapeHtml(r.postcode||'—')}</td><td>${escapeHtml(r.search_query||r.resolved_label||r.page_path||'—')}</td><td>${escapeHtml(r.browser||'—')}</td><td>${escapeHtml(r.device_type||'—')}</td><td class="muted">${escapeHtml(r.timezone||'—')}</td><td class="muted" title="${escapeHtml(r.visitor_id||'')}">${escapeHtml((r.visitor_id||'').slice(0,8)||'—')}</td></tr>`).join('')}</tbody></table>`}
   function formatDate(v){if(!v)return'—';return new Date(v).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
@@ -3516,10 +3516,15 @@ begin
       ) x) returning_visitors
   ),
   daily as (
-    select d::date day,
+    select gs.report_day::date as report_day,
       (select count(*) from public.nt_visitor_sessions s
-       where s.started_at>=d and s.started_at<d+interval '1 day') sessions
-    from generate_series(current_date-6,current_date,interval '1 day') d
+       where s.started_at>=gs.report_day
+         and s.started_at<gs.report_day+interval '1 day') as sessions
+    from generate_series(
+      current_date-6,
+      current_date,
+      interval '1 day'
+    ) as gs(report_day)
   ),
   popular as (
     select coalesce(nullif(search_query,''),nullif(resolved_label,''),'Unknown') label,count(*) count
@@ -3533,7 +3538,7 @@ begin
       from (select * from public.nt_visitor_sessions where started_at>=v_from order by started_at desc limit 1000) s),'[]'::jsonb),
     'searches',coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at desc)
       from (select * from public.nt_search_events where created_at>=v_from order by created_at desc limit 1000) e),'[]'::jsonb),
-    'daily',coalesce((select jsonb_agg(to_jsonb(d) order by d.day) from daily d),'[]'::jsonb),
+    'daily',coalesce((select jsonb_agg(to_jsonb(d) order by d.report_day) from daily d),'[]'::jsonb),
     'popular',coalesce((select jsonb_agg(to_jsonb(p)) from popular p),'[]'::jsonb)
   ) into v_result;
   return v_result;
