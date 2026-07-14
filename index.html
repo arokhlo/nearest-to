@@ -1238,6 +1238,17 @@
   .feedback-success p{margin:0 0 14px;font-size:11.5px;color:var(--muted);line-height:1.5}
   @media(max-width:520px){.feedback-overlay{align-items:flex-end;padding:0}.feedback-dialog{border-radius:20px 20px 0 0;max-height:94vh}.feedback-launch-text{display:none}.feedback-launch-btn{padding:8px;min-height:36px}}
 
+
+  /* ---- Admin feedback view and row actions ---- */
+  .admin-feedback-section[hidden]{display:none}
+  .admin-feedback-message{max-width:420px;min-width:240px;white-space:normal!important;line-height:1.45;overflow-wrap:anywhere}
+  .admin-row-actions{display:flex;gap:6px;align-items:center;white-space:nowrap}
+  .admin-row-btn{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:5px 9px;border-radius:7px;border:1px solid #C8C0AC;background:#fff;color:var(--ink);font:700 10.5px 'Inter',sans-serif;cursor:pointer;text-decoration:none}
+  .admin-row-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(27,58,47,.1)}
+  .admin-row-btn.reply{color:var(--route-blue);border-color:rgba(26,95,180,.32);background:#F7FAFF}
+  .admin-row-btn.delete{color:var(--postbox-red);border-color:rgba(200,16,46,.3);background:#FFF8F9}
+  .admin-btn.feedback-view.active{background:var(--postbox-red);border-color:var(--postbox-red);color:#fff}
+
 </style>
 </head>
 <body>
@@ -3434,10 +3445,11 @@ Helping local businesses grow with free website design, flyer design and custom 
         <select class="admin-select" id="adminRangeSelect"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="0">All time</option></select>
         <button type="button" class="admin-btn refresh" id="adminRefreshBtn">↻ Refresh</button>
         <button type="button" class="admin-btn export" id="adminExportBtn">↓ Export CSV</button>
+        <button type="button" class="admin-btn feedback-view" id="adminViewFeedbackBtn">✉ View feedback</button>
         <button type="button" class="admin-btn settings" id="adminSettingsBtn">⚙ Password</button>
       </div>
       <section class="admin-table-panel"><div class="admin-panel-head"><h3>Visitor activity</h3><div class="admin-panel-head-actions"><span id="adminTableCount">0 records</span><button type="button" class="admin-btn danger small" id="adminClearActivityBtn" title="Delete stored visitor activity">🗑 Delete records</button></div></div><div class="admin-table-wrap" id="adminTableWrap"><div class="admin-loading">Loading analytics…</div></div></section>
-      <section class="admin-table-panel"><div class="admin-panel-head"><h3>User feedback</h3><div class="admin-panel-head-actions"><span id="adminFeedbackCount">0 records</span><button type="button" class="admin-btn danger small" id="adminClearFeedbackBtn" title="Delete stored feedback messages">🗑 Delete records</button></div></div><div class="admin-table-wrap" id="adminFeedbackWrap"><div class="admin-loading">Loading feedback…</div></div></section>
+      <section class="admin-table-panel admin-feedback-section" id="adminFeedbackSection" hidden><div class="admin-panel-head"><h3>View feedback</h3><div class="admin-panel-head-actions"><span id="adminFeedbackCount">0 records</span><button type="button" class="admin-btn danger small" id="adminClearFeedbackBtn" title="Delete stored feedback messages">🗑 Delete records</button></div></div><div class="admin-table-wrap" id="adminFeedbackWrap"><div class="admin-loading">Loading feedback…</div></div></section>
     </div>
   </section>
 </div>
@@ -3509,7 +3521,7 @@ Helping local businesses grow with free website design, flyer design and custom 
   const configured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON.includes('YOUR-SUPABASE');
   const client = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{persistSession:false,autoRefreshToken:false}}) : null;
   const $ = id => document.getElementById(id);
-  const els = {trigger:$('adminTrigger'),login:$('adminLoginOverlay'),dash:$('adminDashOverlay'),settings:$('adminSettingsOverlay'),recovery:$('adminRecoveryOverlay'),clear:$('adminClearOverlay'),key:$('adminKeyInput'),remember:$('adminRememberKey'),loginError:$('adminLoginError'),loginSubmit:$('adminLoginSubmit'),stats:$('adminStatsGrid'),bars:$('adminBars'),popular:$('adminPopularList'),table:$('adminTableWrap'),tableCount:$('adminTableCount'),feedbackTable:$('adminFeedbackWrap'),feedbackCount:$('adminFeedbackCount'),chartTotal:$('adminChartTotal'),search:$('adminSearchBox'),range:$('adminRangeSelect'),dot:$('adminConnectionDot'),connection:$('adminConnectionText'),toast:$('adminToast')};
+  const els = {trigger:$('adminTrigger'),login:$('adminLoginOverlay'),dash:$('adminDashOverlay'),settings:$('adminSettingsOverlay'),recovery:$('adminRecoveryOverlay'),clear:$('adminClearOverlay'),key:$('adminKeyInput'),remember:$('adminRememberKey'),loginError:$('adminLoginError'),loginSubmit:$('adminLoginSubmit'),stats:$('adminStatsGrid'),bars:$('adminBars'),popular:$('adminPopularList'),table:$('adminTableWrap'),tableCount:$('adminTableCount'),feedbackTable:$('adminFeedbackWrap'),feedbackCount:$('adminFeedbackCount'),feedbackSection:$('adminFeedbackSection'),feedbackViewBtn:$('adminViewFeedbackBtn'),chartTotal:$('adminChartTotal'),search:$('adminSearchBox'),range:$('adminRangeSelect'),dot:$('adminConnectionDot'),connection:$('adminConnectionText'),toast:$('adminToast')};
   let adminHash = sessionStorage.getItem(ADMIN_SESSION_KEY) || localStorage.getItem(ADMIN_LOCAL_KEY) || '';
   let analyticsData = {summary:{},sessions:[],searches:[],daily:[],popular:[],feedback:[]};
   let pendingClearAction = null;
@@ -3561,6 +3573,30 @@ Helping local businesses grow with free website design, flyer design and custom 
   async function openDashboard(){els.dash.hidden=false;els.table.innerHTML='<div class="admin-loading">Loading analytics…</div>';try{await fetchDashboard();setConnection(true);render()}catch(e){setConnection(false,'Connection failed');els.table.innerHTML='<div class="admin-empty">'+escapeHtml(e.message)+'</div>';if(/authorised/i.test(e.message)){logout();openLogin()}}}
   $('adminDashClose').addEventListener('click',closeDash);els.dash.addEventListener('click',e=>{if(e.target===els.dash)closeDash()});
   $('adminRefreshBtn').addEventListener('click',openDashboard);els.search.addEventListener('input',renderTable);els.range.addEventListener('change',openDashboard);
+  els.feedbackViewBtn.addEventListener('click',()=>{
+    const opening=els.feedbackSection.hidden;
+    els.feedbackSection.hidden=!opening;
+    els.feedbackViewBtn.classList.toggle('active',opening);
+    els.feedbackViewBtn.textContent=opening?'✕ Hide feedback':'✉ View feedback';
+    if(opening){renderFeedbackTable();els.feedbackSection.scrollIntoView({behavior:'smooth',block:'start'})}
+  });
+  els.feedbackTable.addEventListener('click',async e=>{
+    const btn=e.target.closest('[data-delete-feedback]');
+    if(!btn)return;
+    const id=Number(btn.dataset.deleteFeedback);
+    if(!Number.isSafeInteger(id)||id<1)return;
+    const name=btn.dataset.feedbackName||'this user';
+    if(!window.confirm(`Delete the feedback from ${name}? This cannot be undone.`))return;
+    btn.disabled=true;btn.textContent='Deleting…';
+    try{
+      const {data,error}=await client.rpc('delete_feedback_entry',{p_key_hash:adminHash,p_id:id});
+      if(error)throw error;
+      if(data!==true)throw new Error('The feedback could not be deleted or the admin session is not authorised.');
+      analyticsData.feedback=(analyticsData.feedback||[]).filter(r=>Number(r.id)!==id);
+      renderFeedbackTable();toast('Feedback deleted.');
+    }catch(ex){btn.disabled=false;btn.textContent='Delete';toast(ex.message||'Could not delete feedback.')}
+  });
+
   function logout(){adminHash='';sessionStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem(ADMIN_LOCAL_KEY);closeDash()}
 
   $('adminExportBtn').addEventListener('click',()=>{const rows=filteredRows();const header=['Time','Type','Visitor','Session','User postcode','Search postcode','Search','Resolved place','Browser','Device','Timezone'];const lines=[header.map(csv).join(',')];rows.forEach(r=>lines.push([r.created_at,r.type,r.visitor_id,r.session_id,r.user_postcode,r.postcode,r.search_query,r.resolved_label,r.browser,r.device_type,r.timezone].map(csv).join(',')));const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nearest-to-analytics-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
@@ -3576,7 +3612,20 @@ Helping local businesses grow with free website design, flyer design and custom 
   function renderChart(){const days=analyticsData.daily||[];const max=Math.max(1,...days.map(d=>Number(d.sessions||0)));els.chartTotal.textContent=days.reduce((n,d)=>n+Number(d.sessions||0),0)+' sessions';els.bars.innerHTML=days.map(d=>{const h=Math.max(3,Math.round(Number(d.sessions||0)/max*130));const label=new Date((d.report_day||d.day)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});return `<div class="admin-bar-col"><div class="admin-bar" style="height:${h}px" data-value="${Number(d.sessions||0)}"></div><span class="admin-bar-label">${label}</span></div>`}).join('')||'<div class="admin-empty">No data</div>'}
   function renderPopular(){const list=analyticsData.popular||[];els.popular.innerHTML=list.length?list.map(x=>`<div class="admin-list-row"><b title="${escapeHtml(x.label||'Unknown')}">${escapeHtml(x.label||'Unknown')}</b><span>${Number(x.count||0).toLocaleString('en-GB')}</span></div>`).join(''):'<div class="admin-empty">No searches yet.</div>'}
   function renderTable(){const rows=filteredRows();els.tableCount.textContent=rows.length+' records';if(!rows.length){els.table.innerHTML='<div class="admin-empty">No activity matches this filter.</div>';return}els.table.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Type</th><th>User postcode</th><th>Search postcode</th><th>Search / page</th><th>Browser</th><th>Device</th><th>Timezone</th><th>Visitor</th></tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td><span class="admin-badge">${escapeHtml(r.type)}</span></td><td>${escapeHtml(r.user_postcode||'—')}</td><td>${escapeHtml(r.postcode||'—')}</td><td>${escapeHtml(r.search_query||r.resolved_label||r.page_path||'—')}</td><td>${escapeHtml(r.browser||'—')}</td><td>${escapeHtml(r.device_type||'—')}</td><td class="muted">${escapeHtml(r.timezone||'—')}</td><td class="muted" title="${escapeHtml(r.visitor_id||'')}">${escapeHtml((r.visitor_id||'').slice(0,8)||'—')}</td></tr>`).join('')}</tbody></table>`}
-  function renderFeedbackTable(){const rows=(analyticsData.feedback||[]).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));els.feedbackCount.textContent=rows.length+' records';if(!rows.length){els.feedbackTable.innerHTML='<div class="admin-empty">No feedback submitted yet.</div>';return}els.feedbackTable.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Name</th><th>Email</th><th>Mobile</th><th>Message</th></tr></thead><tbody>${rows.slice(0,500).map(r=>`<tr><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.name||'—')}</td><td>${escapeHtml(r.email||'—')}</td><td>${escapeHtml(r.mobile||'—')}</td><td>${escapeHtml(r.message||'—')}</td></tr>`).join('')}</tbody></table>`}
+  function renderFeedbackTable(){
+    const rows=(analyticsData.feedback||[]).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    els.feedbackCount.textContent=rows.length+' records';
+    if(!rows.length){els.feedbackTable.innerHTML='<div class="admin-empty">No feedback submitted yet.</div>';return}
+    els.feedbackTable.innerHTML=`<table class="admin-table"><thead><tr><th>Time</th><th>Name</th><th>Email</th><th>Mobile</th><th>Message</th><th>Actions</th></tr></thead><tbody>${rows.slice(0,500).map(r=>{
+      const email=String(r.email||'').trim();
+      const mobile=String(r.mobile||'').trim();
+      const subject=encodeURIComponent('Reply from Nearest To');
+      const body=encodeURIComponent(`Hello ${r.name||''},\n\nThank you for your feedback regarding Nearest To.\n\n`);
+      const replyHref=email?`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`:(mobile?`sms:${encodeURIComponent(mobile)}?body=${body}`:'#');
+      return `<tr data-feedback-id="${Number(r.id)}"><td>${escapeHtml(formatDate(r.created_at))}</td><td>${escapeHtml(r.name||'—')}</td><td>${email?`<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`:'—'}</td><td>${mobile?`<a href="tel:${escapeHtml(mobile)}">${escapeHtml(mobile)}</a>`:'—'}</td><td class="admin-feedback-message">${escapeHtml(r.message||'—')}</td><td><div class="admin-row-actions"><a class="admin-row-btn reply" href="${escapeHtml(replyHref)}" ${replyHref==='#'?'aria-disabled="true" onclick="return false"':''}>Reply</a><button type="button" class="admin-row-btn delete" data-delete-feedback="${Number(r.id)}" data-feedback-name="${escapeHtml(r.name||'this user')}">Delete</button></div></td></tr>`
+    }).join('')}</tbody></table>`
+  }
+
   function formatDate(v){if(!v)return'—';return new Date(v).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -3786,6 +3835,24 @@ begin
 end;
 $$;
 
+create or replace function public.delete_feedback_entry(
+  p_key_hash text,
+  p_id bigint
+)
+returns boolean
+language plpgsql
+security definer
+set search_path=public
+as $$
+begin
+  if not public.verify_admin_key(p_key_hash) then
+    return false;
+  end if;
+  delete from public.nt_feedback where id=p_id;
+  return found;
+end;
+$$;
+
 create or replace function public.clear_feedback(
   p_key_hash text,p_older_than_days integer default 0
 )
@@ -3885,6 +3952,7 @@ revoke all on function public.change_admin_key(text,text) from public;
 revoke all on function public.get_admin_analytics(text,integer,integer) from public;
 revoke all on function public.submit_feedback(text,text,text,text) from public;
 revoke all on function public.clear_visitor_activity(text,integer) from public;
+revoke all on function public.delete_feedback_entry(text,bigint) from public;
 revoke all on function public.clear_feedback(text,integer) from public;
 
 grant execute on function public.verify_admin_key(text) to anon,authenticated;
@@ -3894,6 +3962,7 @@ grant execute on function public.change_admin_key(text,text) to anon,authenticat
 grant execute on function public.get_admin_analytics(text,integer,integer) to anon,authenticated;
 grant execute on function public.submit_feedback(text,text,text,text) to anon,authenticated;
 grant execute on function public.clear_visitor_activity(text,integer) to anon,authenticated;
+grant execute on function public.delete_feedback_entry(text,bigint) to anon,authenticated;
 grant execute on function public.clear_feedback(text,integer) to anon,authenticated;
 
 commit;`;
