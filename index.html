@@ -3488,7 +3488,7 @@ Helping local businesses grow with free website design, flyer design and custom 
   <section class="admin-confirm" role="dialog" aria-modal="true" aria-labelledby="adminClearTitle">
     <div class="admin-brand"><div class="admin-brand-icon">🗑</div><div><h2 id="adminClearTitle">Delete stored records</h2></div></div>
     <p class="admin-confirm-body" id="adminClearBody">This will permanently delete records from Supabase. This cannot be undone.</p>
-    <div class="admin-field"><label for="adminClearRange">Range to delete</label><select class="admin-select" id="adminClearRange"><option value="0">All stored records</option><option value="90">Older than 90 days</option><option value="30">Older than 30 days</option><option value="7">Older than 7 days</option></select></div>
+    <div class="admin-field"><label for="adminClearRange">Range to delete</label><select class="admin-select" id="adminClearRange"><option value="0">All stored records</option><option value="90">Older than 90 days</option><option value="30">Older than 30 days</option><option value="7">Older than 7 days</option><option value="2">Older than 2 days</option></select></div>
     <div class="admin-error" id="adminClearError" aria-live="polite"></div>
     <div class="admin-actions"><button type="button" class="admin-btn" id="adminClearCancel">Cancel</button><button type="button" class="admin-btn danger" id="adminClearConfirm">Delete records</button></div>
   </section>
@@ -3820,9 +3820,9 @@ begin
     return jsonb_build_object('authorised',false);
   end if;
   if coalesce(p_older_than_days,0)<=0 then
-    delete from public.nt_search_events;
+    delete from public.nt_search_events where true;
     get diagnostics v_searches = row_count;
-    delete from public.nt_visitor_sessions;
+    delete from public.nt_visitor_sessions where true;
     get diagnostics v_sessions = row_count;
   else
     v_cut:=now()-(p_older_than_days||' days')::interval;
@@ -3869,7 +3869,7 @@ begin
     return jsonb_build_object('authorised',false);
   end if;
   if coalesce(p_older_than_days,0)<=0 then
-    delete from public.nt_feedback;
+    delete from public.nt_feedback where true;
     get diagnostics v_count = row_count;
   else
     v_cut:=now()-(p_older_than_days||' days')::interval;
