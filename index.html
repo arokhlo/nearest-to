@@ -183,18 +183,37 @@
     font-weight:400;
     color:#E7F1EA;
   }
+  .promo-job-tag{
+    flex-shrink:0;
+    display:inline-flex;
+    align-items:center;
+    font-family:'Archivo Narrow', sans-serif;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:1.2px;
+    color:var(--os-green);
+    background: linear-gradient(180deg, #FFD873 0%, #F3B93B 100%);
+    border:1.5px solid #E8A620;
+    border-radius:5px;
+    padding:4px 9px;
+    text-transform:uppercase;
+    box-shadow: 0 1.5px 3px rgba(0,0,0,0.18);
+  }
   .promo-arrow{
     flex-shrink:0;
-    font-size:20px;
+    font-size:24px;
+    font-weight:900;
     color:#FFFFFF;
+    -webkit-text-stroke: 1px #FFFFFF;
     transition: transform .15s ease;
   }
   .promo-banner:hover .promo-arrow{
-    transform: translateX(3px);
+    transform: translateX(4px);
   }
   @media (max-width:520px){
     .promo-title{ font-size:13px; }
     .promo-icon{ width:32px; height:32px; }
+    .promo-job-tag{ font-size:13px; padding:3px 7px; }
   }
 
   .field-row{
@@ -1365,6 +1384,7 @@
       <p class="promo-eyebrow">New from the same maker</p>
       <p class="promo-title">JobScout AI UK — <span>looking for work? Find the right jobs for you, fast.</span></p>
     </span>
+    <span class="promo-job-tag">JOB</span>
     <span class="promo-arrow" aria-hidden="true">→</span>
   </a>
 
