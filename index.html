@@ -2816,7 +2816,212 @@ Helping local businesses grow with free website design, flyer design and custom 
     return intent.recognised ? intent.label : queryRaw.trim();
   }
 
-  async function searchOverpassByName(lat, lon, terms, radiusMeters, externalSignal){
+  function extractUkPostcode(value){
+    const match = String(value || '').toUpperCase().match(/\b([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b/);
+    return match ? match[1].replace(/\s+/g, ' ').trim() : '';
+  }
+
+  function analyseExactAddressQuery(queryRaw){
+    const cleaned = String(queryRaw || '').trim().replace(/\s+/g, ' ');
+    const postcode = extractUkPostcode(cleaned);
+    const postcodeOnly = !!postcode && normalisePostcodeKey(cleaned) === normalisePostcodeKey(postcode);
+    const looksLikeAddress = postcodeOnly || !!postcode || cleaned.includes(',');
+
+    if(!looksLikeAddress) return { exact: false, query: cleaned, postcode: '' };
+
+    // Keep the complete address as one search phrase. When no postcode is present,
+    // explicitly restrict the exact address to the United Kingdom.
+    const alreadyMentionsUk = /(?:,|\s)\s*(?:UK|UNITED KINGDOM|GREAT BRITAIN)\s*$/i.test(cleaned);
+    const exactQuery = postcode || alreadyMentionsUk ? cleaned : `${cleaned}, UK`;
+    return { exact: true, query: exactQuery, postcode, postcodeOnly };
+  }
+
+  async function searchExactUkAddress(queryRaw, externalSignal){
+    const addressQuery = analyseExactAddressQuery(queryRaw);
+    if(!addressQuery.exact) return [];
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
+    const onAbort = () => controller.abort();
+    if(externalSignal) externalSignal.addEventListener('abort', onAbort);
+
+    const mapResults = (data, fallbackLabel) => (data || []).map(item => ({
+      name: item.namedetails && item.namedetails.name
+        ? item.namedetails.name
+        : (item.display_name ? item.display_name.split(',')[0] : fallbackLabel),
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      address: buildNominatimAddress(item.address) || item.display_name || fallbackLabel,
+      postcode: item.address ? item.address.postcode : null,
+      category: item.type || item.category || null,
+      providerClass: item.category || null,
+      providerType: item.type || null,
+      website: item.extratags ? bestWebsiteFromTags(item.extratags) : null,
+      osmType: item.osm_type || null,
+      osmId: item.osm_id || null,
+      tags: item.extratags || {},
+      source: 'nominatim-exact'
+    })).filter(place => !isNaN(place.lat) && !isNaN(place.lon));
+
+    const requestNominatim = async (searchText, limit) => {
+      const params = new URLSearchParams({
+        q: searchText,
+        format: 'jsonv2',
+        limit: String(limit),
+        addressdetails: '1',
+        namedetails: '1',
+        extratags: '1',
+        countrycodes: 'gb',
+        dedupe: '1'
+      });
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      if(!res.ok) return [];
+      return mapResults(await res.json(), searchText);
+    };
+
+    try{
+      const expectedPostcode = normalisePostcodeKey(addressQuery.postcode || '');
+
+      // First try the complete address exactly as entered.
+      const primaryResults = await requestNominatim(
+        addressQuery.query,
+        addressQuery.postcodeOnly ? 10 : 8
+      );
+
+      const primaryMatches = primaryResults.filter(place => {
+        if(!expectedPostcode) return true;
+        return normalisePostcodeKey(place.postcode || '') === expectedPostcode;
+      });
+      if(primaryMatches.length) return primaryMatches;
+
+      // A building or street name may not be indexed exactly. When the input contains
+      // a UK postcode, always fall back to searching that postcode by itself.
+      if(addressQuery.postcode && !addressQuery.postcodeOnly){
+        const postcodeResults = await requestNominatim(addressQuery.postcode, 10);
+        const postcodeMatches = postcodeResults.filter(place =>
+          normalisePostcodeKey(place.postcode || '') === expectedPostcode
+        );
+        if(postcodeMatches.length){
+          return postcodeMatches.map(place => ({
+            ...place,
+            source: 'nominatim-postcode-fallback',
+            matchedByPostcodeFallback: true
+          }));
+        }
+      }
+
+      // Partial address fallback, for example "Foxton Centre, Preston" or
+      // "Civic Centre, Leyland". Treat everything before the final comma as the
+      // place name and the final part as the town/city. Never split the venue name
+      // into unrelated single-word searches.
+      if(!addressQuery.postcode){
+        const rawParts = String(queryRaw || '')
+          .split(',')
+          .map(part => part.trim())
+          .filter(Boolean)
+          .filter(part => !/^(?:UK|UNITED KINGDOM|GREAT BRITAIN)$/i.test(part));
+
+        if(rawParts.length >= 2){
+          const locality = rawParts[rawParts.length - 1];
+          const venueName = rawParts.slice(0, -1).join(', ');
+          // Generate controlled venue-name variants without splitting the phrase
+          // into unrelated words. UK organisations are often indexed with a leading
+          // "The", or with Centre/Center spelling differences.
+          const venueVariants = [...new Set([
+            venueName,
+            /^the\s+/i.test(venueName) ? venueName.replace(/^the\s+/i, '') : `The ${venueName}`,
+            venueName.replace(/\bcentre\b/ig, 'Center'),
+            venueName.replace(/\bcenter\b/ig, 'Centre')
+          ].map(value => value.trim()).filter(Boolean))];
+
+          const candidateQueries = [];
+          for(const variant of venueVariants){
+            candidateQueries.push(
+              `${variant}, ${locality}, England, United Kingdom`,
+              `${variant}, ${locality}, United Kingdom`,
+              `${variant} ${locality}`
+            );
+          }
+
+          for(const candidate of [...new Set(candidateQueries)]){
+            const candidateResults = await requestNominatim(candidate, 15);
+            const strong = candidateResults.filter(place =>
+              venueVariants.some(variant => scoreTextMatch(place, variant) > 0)
+            );
+            if(strong.length){
+              return strong.map(place => ({
+                ...place,
+                source: 'nominatim-partial-address',
+                matchedByPartialAddress: true
+              }));
+            }
+          }
+
+          // If the geocoder cannot resolve the partial address directly, locate the
+          // town first and run both Photon and Overpass around the town centre. This
+          // catches POIs that are indexed by name but not as a complete postal address.
+          const localityResults = await requestNominatim(`${locality}, United Kingdom`, 8);
+          const localityCentre = localityResults.find(place =>
+            normaliseIntentText(`${place.name || ''} ${place.address || ''}`).includes(normaliseIntentText(locality))
+          ) || localityResults[0];
+
+          if(localityCentre){
+            const nearbyTasks = [];
+            for(const variant of venueVariants){
+              nearbyTasks.push(searchPhoton(
+                localityCentre.lat,
+                localityCentre.lon,
+                variant,
+                25000,
+                externalSignal
+              ));
+            }
+            nearbyTasks.push(searchOverpassByName(
+              localityCentre.lat,
+              localityCentre.lon,
+              venueVariants,
+              25000,
+              externalSignal,
+              8500
+            ));
+
+            const nearbySettled = await Promise.allSettled(nearbyTasks);
+            const nearbyResults = nearbySettled.flatMap(result =>
+              result.status === 'fulfilled' ? result.value : []
+            );
+            const localityKey = normaliseIntentText(locality);
+            const strongMatches = nearbyResults.filter(place => {
+              const venueMatch = venueVariants.some(variant => scoreTextMatch(place, variant) > 0);
+              const placeText = normaliseIntentText(`${place.name || ''} ${place.address || ''} ${place.postcode || ''}`);
+              const localityMatch = !localityKey || placeText.includes(localityKey) ||
+                haversineMeters(localityCentre.lat, localityCentre.lon, place.lat, place.lon) <= 25000;
+              return venueMatch && localityMatch;
+            });
+            if(strongMatches.length){
+              return dedupePlaces(strongMatches).map(place => ({
+                ...place,
+                source: place.source === 'photon' ? 'photon-partial-address' : 'overpass-partial-address',
+                matchedByPartialAddress: true
+              }));
+            }
+          }
+        }
+      }
+
+      return [];
+    } catch(err){
+      if(externalSignal && externalSignal.aborted) throw new Error('CANCELLED');
+      return [];
+    } finally {
+      clearTimeout(timeoutId);
+      if(externalSignal) externalSignal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  async function searchOverpassByName(lat, lon, terms, radiusMeters, externalSignal, timeoutMs = 3000){
     const termList = (Array.isArray(terms) ? terms : [terms]).filter(Boolean);
     if(!termList.length) return [];
     const pattern = termList.map(buildFlexibleRegex).join('|');
@@ -2842,7 +3047,7 @@ Helping local businesses grow with free website design, flyer design and custom 
         });
         if(!res.ok) throw new Error(`OVERPASS_HTTP_${res.status}`);
         return res.json();
-      }, externalSignal, 3000);
+      }, externalSignal, timeoutMs);
 
       return (data.elements || []).map(elementToPlace).filter(Boolean);
     } catch(err){
@@ -3257,6 +3462,52 @@ Helping local businesses grow with free website design, flyer design and custom 
       .slice(0, 24);
   }
 
+  function normaliseSearchWord(word){
+    const value = normaliseIntentText(String(word || '')).trim();
+    if(value === 'center') return 'centre';
+    return value;
+  }
+
+  function multiwordSearchSpec(queryRaw){
+    const raw = String(queryRaw || '').trim();
+    const parts = raw.split(',').map(part => part.trim()).filter(Boolean);
+    const phrasePart = parts.length >= 2 ? parts.slice(0, -1).join(' ') : raw;
+    const localityPart = parts.length >= 2 ? parts[parts.length - 1] : '';
+    const words = normaliseIntentText(phrasePart)
+      .split(/\s+/)
+      .map(normaliseSearchWord)
+      .filter(word => word && word.length >= 2);
+    return {
+      phrase: normaliseIntentText(phrasePart),
+      locality: normaliseIntentText(localityPart),
+      words: [...new Set(words)]
+    };
+  }
+
+  function placeContainsAllSearchWords(place, queryRaw){
+    const spec = multiwordSearchSpec(queryRaw);
+    if(spec.words.length < 2) return true;
+
+    const text = normaliseIntentText([
+      place.name, place.address, place.postcode, place.category,
+      place.providerClass, place.providerType,
+      place.tags && place.tags.name,
+      place.tags && place.tags.brand,
+      place.tags && place.tags.operator,
+      place.tags && place.tags.alt_name,
+      place.tags && place.tags.description
+    ].filter(Boolean).join(' '));
+
+    const tokens = text.split(/\s+/).map(normaliseSearchWord).filter(Boolean);
+    const hasWord = word => tokens.some(token =>
+      token === word ||
+      (word.length >= 4 && token.startsWith(word)) ||
+      (token.length >= 4 && word.startsWith(token))
+    );
+
+    return spec.words.every(hasWord);
+  }
+
   function scoreTextMatch(place, queryRaw){
     const query = normaliseIntentText(queryRaw);
     const words = query.split(/\s+/).filter(Boolean);
@@ -3338,6 +3589,47 @@ Helping local businesses grow with free website design, flyer design and custom 
   }
 
   async function findPlaces(lat, lon, queryRaw, radiusMeters, signal){
+    const exactAddress = analyseExactAddressQuery(queryRaw);
+    if(exactAddress.exact){
+      let exactPlaces = await searchExactUkAddress(queryRaw, signal);
+
+      // A comma can mean "venue name, city", not necessarily a complete postal
+      // address. If geocoding finds nothing, fall back to the normal place-name
+      // sources and curated local records, while still requiring every word from
+      // the venue phrase to appear in the accepted result.
+      if(!exactPlaces.length && !exactAddress.postcode){
+        const spec = multiwordSearchSpec(queryRaw);
+        const phrase = spec.phrase || String(queryRaw || '').split(',')[0].trim();
+        const intent = analyseIntent(phrase);
+        const fallback = [];
+        const fallbackRadius = Math.max(radiusMeters, 25000);
+
+        const tasks = [
+          searchPhoton(lat, lon, phrase, fallbackRadius, signal),
+          searchNominatim(lat, lon, phrase, fallbackRadius, signal, { bounded: false, limit: '50' }),
+          searchOverpassByName(lat, lon, [phrase, `The ${phrase}`], fallbackRadius, signal, 9000)
+        ];
+        const settled = await Promise.allSettled(tasks);
+        for(const result of settled){
+          if(result.status === 'fulfilled') fallback.push(...result.value);
+        }
+        try{
+          fallback.push(...await searchCuratedLocalPlaces(lat, lon, phrase, intent, fallbackRadius, signal));
+        } catch(err){
+          if(signal && signal.aborted) throw err;
+        }
+        exactPlaces = dedupePlaces(fallback).filter(place => placeContainsAllSearchWords(place, queryRaw));
+      }
+
+      return exactPlaces
+        .filter(place => placeContainsAllSearchWords(place, queryRaw))
+        .map(place => ({
+          ...place,
+          distance: haversineMeters(lat, lon, place.lat, place.lon)
+        }))
+        .sort((a, b) => scoreTextMatch(b, queryRaw) - scoreTextMatch(a, queryRaw));
+    }
+
     const intent = analyseIntent(queryRaw);
     const combined = [];
     const originLabel = postcodeInput.value.trim().toUpperCase();
@@ -3385,6 +3677,7 @@ Helping local businesses grow with free website design, flyer design and custom 
     // Apply semantic category validation after merging all providers. This blocks
     // false positives such as ordinary food stores appearing in a charity search.
     const filtered = combined.filter(place => {
+      if(!placeContainsAllSearchWords(place, queryRaw)) return false;
       if(place.source === 'curated-local') return queryMatchesCuratedPlace(queryRaw, intent, place);
       return matchesStrictRecognisedIntent(place, intent, queryRaw);
     });
@@ -3467,30 +3760,43 @@ Helping local businesses grow with free website design, flyer design and custom 
         return;
       }
 
-      setStatus(`Searching near ${origin.label}…`, 'loading');
+      const exactAddress = analyseExactAddressQuery(queryRaw);
+      setStatus(exactAddress.exact
+        ? `Searching the UK address or venue…`
+        : `Searching near ${origin.label}…`, 'loading');
 
-      let places = await findPlaces(origin.lat, origin.lon, queryRaw, 5000, signal);
+      let places;
       let usedRadius = 5000;
 
-      if(places.length === 0){
-        setStatus(`Widening search to 20 km…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryRaw, 20000, signal);
-        usedRadius = 20000;
-      }
+      if(exactAddress.exact){
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 5000, signal);
+      } else {
+        places = await findPlaces(origin.lat, origin.lon, queryRaw, 5000, signal);
 
-      if(places.length === 0){
-        setStatus(`Widening search to 60 km…`, 'loading');
-        places = await findPlaces(origin.lat, origin.lon, queryRaw, 60000, signal);
-        usedRadius = 60000;
+        if(places.length === 0){
+          setStatus(`Widening search to 20 km…`, 'loading');
+          places = await findPlaces(origin.lat, origin.lon, queryRaw, 20000, signal);
+          usedRadius = 20000;
+        }
+
+        if(places.length === 0){
+          setStatus(`Widening search to 60 km…`, 'loading');
+          places = await findPlaces(origin.lat, origin.lon, queryRaw, 60000, signal);
+          usedRadius = 60000;
+        }
       }
 
       places = dedupeByLocation(places);
-      const expandedNote = queryExpanded !== queryRaw ? ` (including close equivalents such as "${queryExpanded}")` : '';
-      setStatus(places.length
-        ? `Search complete: found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
-        : `Search complete: no matches found.${expandedNote}`, '');
+      const expandedNote = !exactAddress.exact && queryExpanded !== queryRaw ? ` (including close equivalents such as "${queryExpanded}")` : '';
+      setStatus(exactAddress.exact
+        ? (places.length
+          ? `UK address search complete: found ${places.length} match${places.length===1?'':'es'}.`
+          : `UK address search complete: no match found.`)
+        : (places.length
+          ? `Search complete: found ${places.length} match${places.length===1?'':'es'} within ${usedRadius/1000} km.${expandedNote}`
+          : `Search complete: no matches found.${expandedNote}`), '');
 
-      renderResults(origin, places, queryRaw, queryExpanded);
+      renderResults(origin, places, queryRaw, exactAddress.exact ? queryRaw : queryExpanded);
 
     } catch(err) {
       if(searchCancelled || err.name === 'AbortError') return;
